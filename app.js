@@ -174,7 +174,7 @@ function loadSaved() {
 }
 
 function saveData() {
-  try { localStorage.setItem('bestillingsliste_v4', JSON.stringify({tasks, sectionOpen, undersecOpen, SECTIONS_DATA, vacations, vacIdCounter, projectLinks, linkIdCounter, modelLinks, modelIdCounter})); showToast('Lagret'); }
+  try { localStorage.setItem('bestillingsliste_v4', JSON.stringify({tasks, sectionOpen, undersecOpen, SECTIONS_DATA, vacations, vacIdCounter, projectLinks, linkIdCounter, modelLinks, modelIdCounter, risikoEntries, muligheterEntries})); showToast('Lagret'); }
   catch(e) { showToast('Kunne ikke lagre'); }
 }
 
@@ -298,7 +298,7 @@ function showToast(msg) {
 
 function switchTab(t) {
   activeTab = t;
-  ['liste','kanban','dashboard','ukeplan','ferie'].forEach(function(x) {
+  ['liste','kanban','dashboard','ukeplan','ferie','risiko'].forEach(function(x) {
     var te = document.getElementById('tab-'+x);
     var pe = document.getElementById('panel-'+x);
     if(te) te.classList.toggle('active', t===x);
@@ -308,6 +308,7 @@ function switchTab(t) {
   if (t==='dashboard') renderDashboard();
   if (t==='ukeplan') renderUkeplan();
   if (t==='ferie') vacRender();
+  if (t==='risiko') renderRisiko();
 }
 
 function toggleFilter(f) {
@@ -1378,7 +1379,7 @@ function vacRender() {
 }
 
 var autoSaveTimer;
-function scheduleAutoSave(){ clearTimeout(autoSaveTimer); autoSaveTimer=setTimeout(function(){ try{ localStorage.setItem('bestillingsliste_v4',JSON.stringify({tasks:tasks,sectionOpen:sectionOpen,undersecOpen:undersecOpen,SECTIONS_DATA:SECTIONS_DATA,vacations:vacations,vacIdCounter:vacIdCounter,projectLinks:projectLinks,linkIdCounter:linkIdCounter,modelLinks:modelLinks,modelIdCounter:modelIdCounter})); }catch(e){} },1200); }
+function scheduleAutoSave(){ clearTimeout(autoSaveTimer); autoSaveTimer=setTimeout(function(){ try{ localStorage.setItem('bestillingsliste_v4',JSON.stringify({tasks:tasks,sectionOpen:sectionOpen,undersecOpen:undersecOpen,SECTIONS_DATA:SECTIONS_DATA,vacations:vacations,vacIdCounter:vacIdCounter,projectLinks:projectLinks,linkIdCounter:linkIdCounter,modelLinks:modelLinks,modelIdCounter:modelIdCounter,risikoEntries:risikoEntries,muligheterEntries:muligheterEntries})); }catch(e){} },1200); }
 var _change=change;
 window.change=function(id,field,val){ _change(id,field,val); scheduleAutoSave(); };
 var _toggleSelect=toggleSelect;
@@ -1707,5 +1708,193 @@ if(_pn){
     var _pnel=document.getElementById('project-name');
     if(_pnel) _pnel.textContent=_pn;
 }
-``
 
+
+// ─── RISIKO & MULIGHETER ──────────────────────────────────────────────────────
+
+var risikoEntries = [
+  {id:'K-R1', type:'risiko', nr:'K-R1', beskrivelse:'Feil fundamenteringsmetode – setninger/kollaps', sanns:'Middels', kons:'Stor', hvemTilforer:'Geoteknikk – mangelfulle grunnundersøkelser', hvemReduseres:'Supplerende geoteknisk rapport; avklare fundamentering før kontrahering', rest:'Middels', handling:'Kontraktuell sikring via GC', status:'Åpen'},
+  {id:'K-R2', type:'risiko', nr:'K-R2', beskrivelse:'Betongsprekkdannelse i bru/kulvert pga. temperatur/krymping', sanns:'Liten', kons:'Middels', hvemTilforer:'Materialvalg – ingen krav til krympearmering i KG', hvemReduseres:'Stille krav til rissnominal armering og herdeplan i anbud', rest:'Liten', handling:'Spesifisere i kravdok.', status:'Åpen'},
+  {id:'K-R3', type:'risiko', nr:'K-R3', beskrivelse:'Kapasitetsproblem – spennvidde overskrides ved lasttilfeller', sanns:'Liten', kons:'Stor', hvemTilforer:'Prosjekteringsgrunnlag – usikker nyttelastmodell', hvemReduseres:'Verifisere lastmodell mot N400; avklare med SVV', rest:'Liten', handling:'Kontroll av lastmodell', status:'Åpen'},
+  {id:'K-R4', type:'risiko', nr:'K-R4', beskrivelse:'Grensesnittkonflikt bruer/tunnelportaler – kollisjonskontroll', sanns:'Middels', kons:'Middels', hvemTilforer:'Prosjektering – BIM-koordinering mangler', hvemReduseres:'Innføre BIM-koordineringsmøter ukentlig', rest:'Liten', handling:'BIM-rutine', status:'Åpen'},
+  {id:'T-R1', type:'risiko', nr:'T-R1', beskrivelse:'Uventet dårlig bergkvalitet – økt sikringsbehov/kostnad', sanns:'Stor', kons:'Stor', hvemTilforer:'Geologi – grunnundersøkelsene dekker ikke hele traseen', hvemReduseres:'Supplerende boringer/seismikk; GC-kontrakt med risikodeling', rest:'Middels', handling:'GC-klausul / risikodeling', status:'Åpen'},
+  {id:'T-R2', type:'risiko', nr:'T-R2', beskrivelse:'Vanninntrenging over grenseverdi – forsinkelse og kostnad', sanns:'Middels', kons:'Stor', hvemTilforer:'Hydrologi – ukjent sprekksystem', hvemReduseres:'Tett injeksjonsprogram og beredskapsplan for vannhåndtering', rest:'Middels', handling:'Injeksjonsplan', status:'Åpen'},
+  {id:'T-R3', type:'risiko', nr:'T-R3', beskrivelse:'Gasslomme i tunnel – HMS-hendelse', sanns:'Liten', kons:'Stor', hvemTilforer:'Geologi – historikk fra nærliggende tunneler', hvemReduseres:'Gassmåling kontinuerlig; beredskapsplan; informere entreprenør', rest:'Liten', handling:'Beredskapsplan', status:'Åpen'},
+  {id:'T-R4', type:'risiko', nr:'T-R4', beskrivelse:'Forsinket levering av tunnelteknisk utstyr (ventilasjon/SRO)', sanns:'Middels', kons:'Middels', hvemTilforer:'Marked – lang leveringstid el-utstyr', hvemReduseres:'Tidlig bestilling; avklare leverandør i anbudsfase', rest:'Liten', handling:'Tidlig innkjøp', status:'Åpen'}
+];
+
+var muligheterEntries = [
+  {id:'K-M1', type:'mulighet', nr:'K-M1', beskrivelse:'Optimalisert brutype (stålbjelke vs. betong) gir kortere byggetid', sanns:'Middels', kons:'Stor', hvemTilforer:'Prosjektering – tidlig alternativvurdering', hvemReduseres:'Gjennomføre konseptoptimalisering i anbudsfase', rest:'Middels', handling:'Konseptstudie bru', status:'Åpen'},
+  {id:'K-M2', type:'mulighet', nr:'K-M2', beskrivelse:'Prefabrikkerte elementer reduserer riggkostnader og tid', sanns:'Middels', kons:'Middels', hvemTilforer:'Marked – tilgjengelig prefab-kapasitet', hvemReduseres:'Avklare leverandørmarked; tilby i anbud', rest:'Middels', handling:'Markedsundersøkelse', status:'Åpen'},
+  {id:'K-M3', type:'mulighet', nr:'K-M3', beskrivelse:'Gjenbruk av sprengstein til fundament/fylling – redusert massetransport', sanns:'Stor', kons:'Middels', hvemTilforer:'Massebalanse – tunnel og dagsone nær hverandre', hvemReduseres:'Lage massebalanseplan i prosjekteringsfase', rest:'Stor', handling:'Massebalanseplan', status:'Åpen'},
+  {id:'T-M1', type:'mulighet', nr:'T-M1', beskrivelse:'Bedre bergkvalitet enn antatt – reduserte sikringskostnader', sanns:'Middels', kons:'Stor', hvemTilforer:'Geologi – optimistisk tolkning av Q-verdier', hvemReduseres:'Monitorere under driving; justere sikringsklasse løpende', rest:'Middels', handling:'Geologisk oppfølging', status:'Åpen'},
+  {id:'T-M2', type:'mulighet', nr:'T-M2', beskrivelse:'Overskuddsmasser fra tunneldriving → pukk til veioppbygging', sanns:'Stor', kons:'Middels', hvemTilforer:'Logistikk – tunneldriving produserer store steinmengder', hvemReduseres:'Planlegge knuseverk og mellomlagring tidlig', rest:'Stor', handling:'Masseplan / knuseverk', status:'Åpen'},
+  {id:'T-M3', type:'mulighet', nr:'T-M3', beskrivelse:'Tidlig ferdig tunneldriving frigjør rigg til dagsonetiltak', sanns:'Liten', kons:'Middels', hvemTilforer:'Fremdrift – tunneldriving starter tidlig', hvemReduseres:'Fremdriftsoptimalisering og fleksibel riggstyring', rest:'Liten', handling:'Fremdriftsplan', status:'Åpen'}
+];
+
+var risikoView = 'matrise';
+var risikoIdCounter = 100;
+
+// Load saved risiko data
+function loadRisikoFromSaved(data) {
+  if (data.risikoEntries) risikoEntries = data.risikoEntries;
+  if (data.muligheterEntries) muligheterEntries = data.muligheterEntries;
+}
+
+function switchRisikoView(v) {
+  risikoView = v;
+  ['matrise','risikoer','muligheter'].forEach(function(x){
+    var btn = document.getElementById('rsub-'+x);
+    var el  = document.getElementById('rview-'+x);
+    if(btn) btn.classList.toggle('active', v===x);
+    if(el)  el.style.display = v===x ? '' : 'none';
+  });
+  var addBtn = document.getElementById('risiko-add-btn');
+  if(addBtn) addBtn.style.display = (v==='risikoer'||v==='muligheter') ? '' : 'none';
+  renderRisiko();
+}
+
+// Sannsynlighet/Konsekvens value → number
+function snkVal(s){ return s==='Stor'?3:s==='Middels'?2:1; }
+
+// Score → color
+function risikoColor(score){
+  if(score>=6) return '#E24B4A';
+  if(score>=4) return '#F5A623';
+  if(score>=3) return '#F5D547';
+  return '#6EC97A';
+}
+
+function renderRisiko() {
+  if(risikoView==='matrise') renderRisikoMatrise();
+  else if(risikoView==='risikoer') renderRisikoList('risiko');
+  else if(risikoView==='muligheter') renderRisikoList('mulighet');
+}
+
+function renderRisikoMatrise() {
+  var grid = document.getElementById('rm-grid');
+  if(!grid) return;
+
+  // 3×3 matrix: s=3,2,1 (rows top→bottom) × k=1,2,3 (cols left→right)
+  var cells = {};
+  var all = risikoEntries.concat(muligheterEntries);
+  all.forEach(function(e){
+    var s = snkVal(e.sanns), k = snkVal(e.kons);
+    var key = s+','+k;
+    if(!cells[key]) cells[key]=[];
+    cells[key].push(e);
+  });
+
+  var html = '';
+  [3,2,1].forEach(function(s){
+    [1,2,3].forEach(function(k){
+      var score = s*k;
+      var clr = risikoColor(score);
+      var items = cells[s+','+k]||[];
+      html += '<div class="rm-cell" style="background:'+clr+'">';
+      html += '<div class="rm-cell-score">'+score+'</div>';
+      items.forEach(function(e){
+        var icon = e.type==='risiko' ? '⚠' : '✦';
+        html += '<div class="rm-chip rm-chip-'+(e.type==='risiko'?'risk':'opp')+'" title="'+esc(e.beskrivelse)+'" onclick="switchRisikoView(\''+(e.type==='risiko'?'risikoer':'muligheter')+'\')">'+icon+' '+esc(e.nr)+'</div>';
+      });
+      html += '</div>';
+    });
+  });
+  grid.innerHTML = html;
+}
+
+function renderRisikoList(type) {
+  var entries = type==='risiko' ? risikoEntries : muligheterEntries;
+  var listId  = type==='risiko' ? 'risiko-list' : 'mulighet-list';
+  var el = document.getElementById(listId);
+  if(!el) return;
+
+  var snkOpts = ['Liten','Middels','Stor'];
+  var statusOpts = ['Åpen','Pågår','Lukket'];
+
+  var html = '';
+  entries.forEach(function(e, idx){
+    var score = snkVal(e.sanns)*snkVal(e.kons);
+    var clr = risikoColor(score);
+    html += '<div class="risiko-row" data-id="'+e.id+'">';
+    // Nr badge
+    html += '<div class="risiko-cell risiko-nr"><span class="risiko-nr-badge" style="background:'+clr+'">'+esc(e.nr)+'</span></div>';
+    // Beskrivelse
+    html += '<div class="risiko-cell risiko-desc"><textarea class="risiko-ta" onchange="risikoChange(\''+type+'\',\''+e.id+'\',\'beskrivelse\',this.value)">'+esc(e.beskrivelse)+'</textarea></div>';
+    // Sanns
+    html += '<div class="risiko-cell">'+snkSelect(type, e.id, 'sanns', e.sanns, snkOpts)+'</div>';
+    // Kons / Gevinst
+    html += '<div class="risiko-cell">'+snkSelect(type, e.id, 'kons', e.kons, snkOpts)+'</div>';
+    // Hvem tilfører
+    html += '<div class="risiko-cell"><textarea class="risiko-ta" onchange="risikoChange(\''+type+'\',\''+e.id+'\',\'hvemTilforer\',this.value)">'+esc(e.hvemTilforer)+'</textarea></div>';
+    // Hvem reduseres
+    html += '<div class="risiko-cell"><textarea class="risiko-ta" onchange="risikoChange(\''+type+'\',\''+e.id+'\',\'hvemReduseres\',this.value)">'+esc(e.hvemReduseres)+'</textarea></div>';
+    // Restrisiko
+    html += '<div class="risiko-cell">'+snkSelect(type, e.id, 'rest', e.rest, snkOpts)+'</div>';
+    // Forslag
+    html += '<div class="risiko-cell"><textarea class="risiko-ta" onchange="risikoChange(\''+type+'\',\''+e.id+'\',\'handling\',this.value)">'+esc(e.handling)+'</textarea></div>';
+    // Status
+    html += '<div class="risiko-cell">';
+    html += '<select class="risiko-sel" onchange="risikoChange(\''+type+'\',\''+e.id+'\',\'status\',this.value)">';
+    statusOpts.forEach(function(s){ html += '<option'+(e.status===s?' selected':'')+'>'+s+'</option>'; });
+    html += '</select></div>';
+    // Delete
+    html += '<div class="risiko-cell risiko-del"><button class="risiko-del-btn" onclick="risikoDelete(\''+type+'\',\''+e.id+'\')">✕</button></div>';
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function snkSelect(type, id, field, val, opts){
+  var s = '<select class="risiko-sel snk-sel snk-'+val.toLowerCase()+'" onchange="risikoChange(\''+type+'\',\''+id+'\',\''+field+'\',this.value);this.className=\'risiko-sel snk-sel snk-\'+this.value.toLowerCase()">';
+  opts.forEach(function(o){ s += '<option'+(val===o?' selected':'')+'>'+o+'</option>'; });
+  s += '</select>';
+  return s;
+}
+
+function risikoChange(type, id, field, val){
+  var arr = type==='risiko' ? risikoEntries : muligheterEntries;
+  var e = arr.find(function(x){return x.id===id;});
+  if(e){ e[field]=val; }
+  scheduleAutoSave();
+  if(risikoView==='matrise') renderRisikoMatrise();
+  if(risikoView==='risikoer') renderRisikoList('risiko');
+  if(risikoView==='muligheter') renderRisikoList('mulighet');
+}
+
+function risikoDelete(type, id){
+  if(!confirm('Slett denne raden?')) return;
+  if(type==='risiko') risikoEntries = risikoEntries.filter(function(e){return e.id!==id;});
+  else muligheterEntries = muligheterEntries.filter(function(e){return e.id!==id;});
+  scheduleAutoSave();
+  renderRisiko();
+}
+
+function risikoAdd(type){
+  risikoIdCounter++;
+  var prefix = type==='risiko' ? 'R' : 'M';
+  var newEntry = {
+    id: prefix+'-'+risikoIdCounter, type:type,
+    nr: prefix+'-'+risikoIdCounter,
+    beskrivelse:'', sanns:'Middels', kons:'Middels',
+    hvemTilforer:'', hvemReduseres:'',
+    rest:'Middels', handling:'', status:'Åpen'
+  };
+  if(type==='risiko') risikoEntries.push(newEntry);
+  else muligheterEntries.push(newEntry);
+  scheduleAutoSave();
+  renderRisikoList(type);
+  // scroll to new row
+  var el = document.getElementById(type==='risiko'?'risiko-list':'mulighet-list');
+  if(el) el.lastElementChild && el.lastElementChild.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+// Hook into loadSaved
+var _origLoadSaved = loadSaved;
+loadSaved = function(){
+  _origLoadSaved();
+  try {
+    var saved = localStorage.getItem('bestillingsliste_v4');
+    if(saved){ var data=JSON.parse(saved); loadRisikoFromSaved(data); }
+  } catch(e){}
+};
