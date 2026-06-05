@@ -283,11 +283,27 @@ function linkDeleteCurrent() {
 }
 
 function clearAll() {
-  if (!confirm('Nullstille alle valg, frister og statuser?')) return;
-  tasks.forEach(t => { t.selected=false; t.frist=''; t.timer=''; t.status='Ikke startet'; t.link=''; t.comment=''; t.ansvar=''; t.fredagstatus=''; t.eier=''; });
-  saveData(); render();
-  if (activeTab==='kanban') { if(kanbanView==='tidslinje') renderTimeline(); else renderKanban(); }
-  if (activeTab==='dashboard') renderDashboard();
+  var stored = getPin();
+  var doReset = function() {
+    if (!confirm('Nullstille alle valg, frister og statuser?')) return;
+    tasks.forEach(function(t){ t.selected=false; t.frist=''; t.timer=''; t.status='Ikke startet'; t.link=''; t.comment=''; t.ansvar=''; t.fredagstatus=''; t.eier=''; });
+    saveData(); render();
+    if (activeTab==='kanban') { if(kanbanView==='tidslinje') renderTimeline(); else renderKanban(); }
+    if (activeTab==='dashboard') renderDashboard();
+    showToast('Nullstilt');
+  };
+  if (!stored) {
+    openPinModal('set-first', null, null, null, null);
+    pinCallback = doReset;
+  } else {
+    pinBuffer=''; pinMode='verify'; window._pinCorrect=stored;
+    pinCallback = doReset;
+    updatePinDots();
+    document.getElementById('pin-error').textContent='';
+    document.getElementById('pin-title').textContent='PIN kreves';
+    document.getElementById('pin-sub').textContent='Skriv inn PIN for å nullstille listen.';
+    document.getElementById('pin-overlay').classList.add('show');
+  }
 }
 
 function showToast(msg) {
@@ -1746,8 +1762,11 @@ function switchRisikoView(v) {
   ['matrise','risikoer','muligheter'].forEach(function(x){
     var btn = document.getElementById('rsub-'+x);
     var el  = document.getElementById('rview-'+x);
-    if(btn) btn.classList.toggle('active', v===x);
-    if(el)  el.style.display = v===x ? '' : 'none';
+    if(btn){
+      btn.style.background = (v===x) ? '#1a1a2e' : '#fff';
+      btn.style.color      = (v===x) ? '#fff'     : '#555';
+    }
+    if(el) el.style.display = v===x ? 'block' : 'none';
   });
   var addBtn = document.getElementById('risiko-add-btn');
   if(addBtn) addBtn.style.display = (v==='risikoer'||v==='muligheter') ? '' : 'none';
@@ -1774,6 +1793,9 @@ function renderRisiko() {
 function renderRisikoMatrise() {
   var grid = document.getElementById('rm-grid');
   if(!grid) return;
+  // ensure matrise view is visible
+  var mv = document.getElementById('rview-matrise');
+  if(mv) mv.style.display = 'block';
 
   // 3×3 matrix: s=3,2,1 (rows top→bottom) × k=1,2,3 (cols left→right)
   var cells = {};
@@ -1791,11 +1813,13 @@ function renderRisikoMatrise() {
       var score = s*k;
       var clr = risikoColor(score);
       var items = cells[s+','+k]||[];
-      html += '<div class="rm-cell" style="background:'+clr+'">';
-      html += '<div class="rm-cell-score">'+score+'</div>';
+      html += '<div style="background:'+clr+';border-radius:8px;padding:6px;display:flex;flex-direction:column;gap:4px;position:relative;overflow:hidden;">';
+      html += '<span style="font-size:20px;font-weight:700;color:rgba(0,0,0,.2);position:absolute;bottom:4px;right:8px;line-height:1">'+score+'</span>';
       items.forEach(function(e){
         var icon = e.type==='risiko' ? '⚠' : '✦';
-        html += '<div class="rm-chip rm-chip-'+(e.type==='risiko'?'risk':'opp')+'" title="'+esc(e.beskrivelse)+'" onclick="switchRisikoView(\''+(e.type==='risiko'?'risikoer':'muligheter')+'\')">'+icon+' '+esc(e.nr)+'</div>';
+        var chipBg = e.type==='risiko' ? 'rgba(0,0,0,.22)' : 'rgba(255,255,255,.6)';
+        var chipColor = e.type==='risiko' ? '#fff' : '#333';
+        html += '<div style="font-size:10px;font-weight:700;padding:2px 5px;border-radius:4px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:96px;background:'+chipBg+';color:'+chipColor+'" title="'+esc(e.beskrivelse)+'" onclick="switchRisikoView(\''+(e.type==='risiko'?'risikoer':'muligheter')+'\')">'+icon+' '+esc(e.nr)+'</div>';
       });
       html += '</div>';
     });
@@ -1811,42 +1835,46 @@ function renderRisikoList(type) {
 
   var snkOpts = ['Liten','Middels','Stor'];
   var statusOpts = ['Åpen','Pågår','Lukket'];
+  var ROW_GRID = 'display:grid;grid-template-columns:64px 1fr 76px 76px 1fr 1fr 76px 1fr 84px 36px;gap:4px;padding:4px 12px;border-bottom:1px solid #eee;align-items:start;';
+  var CELL = 'display:flex;align-items:flex-start;padding:2px 0;';
+  var TA   = 'width:100%;min-height:50px;font-size:11px;font-family:inherit;background:transparent;border:1px solid transparent;border-radius:3px;padding:3px 5px;color:inherit;resize:vertical;line-height:1.45;box-sizing:border-box;';
+  var SEL  = 'font-size:11px;font-family:inherit;background:#fff;border:1px solid #ddd;border-radius:4px;padding:3px 4px;cursor:pointer;width:100%;';
 
   var html = '';
-  entries.forEach(function(e, idx){
+  entries.forEach(function(e){
     var score = snkVal(e.sanns)*snkVal(e.kons);
     var clr = risikoColor(score);
-    html += '<div class="risiko-row" data-id="'+e.id+'">';
-    // Nr badge
-    html += '<div class="risiko-cell risiko-nr"><span class="risiko-nr-badge" style="background:'+clr+'">'+esc(e.nr)+'</span></div>';
+    var bg = (entries.indexOf(e)%2===0) ? '#fff' : '#fafafa';
+    html += '<div style="'+ROW_GRID+'background:'+bg+'">';
+    // Nr
+    html += '<div style="'+CELL+'justify-content:center;padding-top:4px"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;color:#fff;background:'+clr+';white-space:nowrap">'+esc(e.nr)+'</span></div>';
     // Beskrivelse
-    html += '<div class="risiko-cell risiko-desc"><textarea class="risiko-ta" onchange="risikoChange(\''+type+'\',\''+e.id+'\',\'beskrivelse\',this.value)">'+esc(e.beskrivelse)+'</textarea></div>';
+    html += '<div style="'+CELL+'"><textarea style="'+TA+'" onchange="risikoChange(\''+type+'\',\''+e.id+'\',\'beskrivelse\',this.value)">'+esc(e.beskrivelse)+'</textarea></div>';
     // Sanns
-    html += '<div class="risiko-cell">'+snkSelect(type, e.id, 'sanns', e.sanns, snkOpts)+'</div>';
-    // Kons / Gevinst
-    html += '<div class="risiko-cell">'+snkSelect(type, e.id, 'kons', e.kons, snkOpts)+'</div>';
+    html += '<div style="'+CELL+'">'+snkSelect(type, e.id, 'sanns', e.sanns, snkOpts, SEL)+'</div>';
+    // Kons
+    html += '<div style="'+CELL+'">'+snkSelect(type, e.id, 'kons', e.kons, snkOpts, SEL)+'</div>';
     // Hvem tilfører
-    html += '<div class="risiko-cell"><textarea class="risiko-ta" onchange="risikoChange(\''+type+'\',\''+e.id+'\',\'hvemTilforer\',this.value)">'+esc(e.hvemTilforer)+'</textarea></div>';
+    html += '<div style="'+CELL+'"><textarea style="'+TA+'" onchange="risikoChange(\''+type+'\',\''+e.id+'\',\'hvemTilforer\',this.value)">'+esc(e.hvemTilforer)+'</textarea></div>';
     // Hvem reduseres
-    html += '<div class="risiko-cell"><textarea class="risiko-ta" onchange="risikoChange(\''+type+'\',\''+e.id+'\',\'hvemReduseres\',this.value)">'+esc(e.hvemReduseres)+'</textarea></div>';
+    html += '<div style="'+CELL+'"><textarea style="'+TA+'" onchange="risikoChange(\''+type+'\',\''+e.id+'\',\'hvemReduseres\',this.value)">'+esc(e.hvemReduseres)+'</textarea></div>';
     // Restrisiko
-    html += '<div class="risiko-cell">'+snkSelect(type, e.id, 'rest', e.rest, snkOpts)+'</div>';
-    // Forslag
-    html += '<div class="risiko-cell"><textarea class="risiko-ta" onchange="risikoChange(\''+type+'\',\''+e.id+'\',\'handling\',this.value)">'+esc(e.handling)+'</textarea></div>';
+    html += '<div style="'+CELL+'">'+snkSelect(type, e.id, 'rest', e.rest, snkOpts, SEL)+'</div>';
+    // Handling
+    html += '<div style="'+CELL+'"><textarea style="'+TA+'" onchange="risikoChange(\''+type+'\',\''+e.id+'\',\'handling\',this.value)">'+esc(e.handling)+'</textarea></div>';
     // Status
-    html += '<div class="risiko-cell">';
-    html += '<select class="risiko-sel" onchange="risikoChange(\''+type+'\',\''+e.id+'\',\'status\',this.value)">';
+    html += '<div style="'+CELL+'"><select style="'+SEL+'" onchange="risikoChange(\''+type+'\',\''+e.id+'\',\'status\',this.value)">';
     statusOpts.forEach(function(s){ html += '<option'+(e.status===s?' selected':'')+'>'+s+'</option>'; });
     html += '</select></div>';
     // Delete
-    html += '<div class="risiko-cell risiko-del"><button class="risiko-del-btn" onclick="risikoDelete(\''+type+'\',\''+e.id+'\')">✕</button></div>';
+    html += '<div style="'+CELL+'justify-content:center;"><button onclick="risikoDelete(\''+type+'\',\''+e.id+'\')" style="background:none;border:none;color:#aaa;cursor:pointer;font-size:14px;padding:2px 4px;border-radius:3px" onmouseover="this.style.color=\'#e24b4a\'" onmouseout="this.style.color=\'#aaa\'">✕</button></div>';
     html += '</div>';
   });
   el.innerHTML = html;
 }
 
-function snkSelect(type, id, field, val, opts){
-  var s = '<select class="risiko-sel snk-sel snk-'+val.toLowerCase()+'" onchange="risikoChange(\''+type+'\',\''+id+'\',\''+field+'\',this.value);this.className=\'risiko-sel snk-sel snk-\'+this.value.toLowerCase()">';
+function snkSelect(type, id, field, val, opts, selStyle){
+  var s = '<select style="'+(selStyle||'')+'" onchange="risikoChange(\''+type+'\',\''+id+'\',\''+field+'\',this.value)">';
   opts.forEach(function(o){ s += '<option'+(val===o?' selected':'')+'>'+o+'</option>'; });
   s += '</select>';
   return s;
