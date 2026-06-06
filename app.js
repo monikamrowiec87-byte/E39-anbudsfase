@@ -32,7 +32,7 @@ let modelLinks = [
 ];
 let modelIdCounter = 2;
 let linkEditGroup = 'doc';
-let filters = {valgte:false, frist:false, pågår:false};
+let filters = {valgte:false, frist:false, pågår:false, skjulferdig:false};
 let activeTab = 'liste';
 let kanbanView = 'tidslinje';
 
@@ -471,6 +471,7 @@ function _filterTasks(list, q, today) {
     if(filters.valgte && !t.selected) return false;
     if(filters.frist && !(t.frist&&t.frist<today&&t.status!=='Ferdig')) return false;
     if(filters['pågår'] && t.status!=='Pågår') return false;
+    if(filters['skjulferdig'] && t.status==='Ferdig') return false;
     return true;
   });
 }
