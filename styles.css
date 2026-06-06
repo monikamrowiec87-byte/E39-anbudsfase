@@ -1,50 +1,50 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg: #f5f6f8;
+    --bg: #f5f4f0;
     --surface: #ffffff;
-    --surface2: #eef1f5;
-    --border: rgba(22,30,46,0.08);
-    --border2: rgba(22,30,46,0.16);
-    --text: #171b24;
-    --text2: #434c5b;
-    --text3: #6c7585;
-    --blue: #235c92;
-    --blue-bg: #e9f1f8;
-    --green: #3a6b34;
-    --green-bg: #ebf1e5;
-    --amber: #8a5a12;
-    --amber-bg: #f6efdd;
-    --red: #9e3838;
-    --red-bg: #f7eaea;
-    --gray: #5a606b;
-    --gray-bg: #eef0f3;
-    --accent: #235c92;
-    --progress: #3a8e6e;
+    --surface2: #f0ede6;
+    --border: rgba(30,20,0,0.09);
+    --border2: rgba(30,20,0,0.18);
+    --text: #1a1400;
+    --text2: #4a4030;
+    --text3: #8a7a60;
+    --blue: #b08800;
+    --blue-bg: #fdf6d8;
+    --green: #5a7a00;
+    --green-bg: #f0f5e0;
+    --amber: #a06800;
+    --amber-bg: #fef3d0;
+    --red: #a03020;
+    --red-bg: #faeae6;
+    --gray: #6a6050;
+    --gray-bg: #f0ede6;
+    --accent: #c8a000;
+    --progress: #c8a000;
     --radius: 9px;
     --radius-sm: 6px;
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #f5f6f8;
+      --bg: #f5f4f0;
       --surface: #ffffff;
-      --surface2: #eef1f5;
-      --border: rgba(22,30,46,0.08);
-      --border2: rgba(22,30,46,0.16);
-      --text: #171b24;
-      --text2: #434c5b;
-      --text3: #6c7585;
-      --blue: #235c92;
-      --blue-bg: #e9f1f8;
-      --green: #3a6b34;
-      --green-bg: #ebf1e5;
-      --amber: #8a5a12;
-      --amber-bg: #f6efdd;
-      --red: #9e3838;
-      --red-bg: #f7eaea;
-      --gray: #5a606b;
-      --gray-bg: #eef0f3;
+      --surface2: #f0ede6;
+      --border: rgba(30,20,0,0.09);
+      --border2: rgba(30,20,0,0.18);
+      --text: #1a1400;
+      --text2: #4a4030;
+      --text3: #8a7a60;
+      --blue: #b08800;
+      --blue-bg: #fdf6d8;
+      --green: #5a7a00;
+      --green-bg: #f0f5e0;
+      --amber: #a06800;
+      --amber-bg: #fef3d0;
+      --red: #a03020;
+      --red-bg: #faeae6;
+      --gray: #6a6050;
+      --gray-bg: #f0ede6;
     }
   }
   body {
@@ -1186,3 +1186,27 @@
   .task-row.drag-over-top { border-top: 2px solid var(--accent) !important; }
   .task-row.drag-over-bottom { border-bottom: 2px solid var(--accent) !important; }
   .task-row.dragging-row { opacity: 0.4; }
+
+  /* ── Implenia brand header ── */
+  .header {
+    background: #1a1400 !important;
+    border-bottom-color: #c8a000 !important;
+  }
+  .logo { color: #c8a000 !important; }
+  .project-name { color: #f5f0e0 !important; }
+  .header-top { border-bottom-color: rgba(200,160,0,0.25) !important; }
+  .link-strip { border-bottom-color: rgba(200,160,0,0.15) !important; }
+  .model-strip { border-bottom-color: rgba(200,160,0,0.15) !important; }
+  .stats-bar { border-bottom-color: rgba(200,160,0,0.15) !important; }
+  .tab { color: #c8b080 !important; }
+  .tab:hover { color: #f5f0e0 !important; }
+  .tab.active { color: #dcb414 !important; border-bottom-color: #dcb414 !important; }
+  .btn { background: #2a2000; color: #f0e8c8; border-color: rgba(200,160,0,0.3); }
+  .btn:hover { background: #3a2e00; }
+  .btn-primary { background: #c8a000 !important; color: #1a1400 !important; border-color: #c8a000 !important; font-weight: 600; }
+  .btn-primary:hover { background: #dcb414 !important; }
+  .sp-btn { background: #2a2000 !important; color: #c8b080 !important; border-color: rgba(200,160,0,0.3) !important; }
+  .link-chip { color: #c8a000 !important; }
+  .link-add-btn { color: #c8b080 !important; }
+  .model-strip-label { color: #c8a000 !important; }
+  .model-chip { border-color: #c8a000 !important; background: #fdf6d8 !important; color: #7a5a00 !important; }
