@@ -1162,7 +1162,6 @@
   }
 
   /* ── Column resize handles ── */
-  .col-headers { position: relative; user-select: none; }
   .ch { position: relative; display: flex; align-items: center; gap: 4px; }
   .ch-resize {
     position: absolute; right: -4px; top: 0; bottom: 0; width: 8px;
@@ -1170,13 +1169,13 @@
   }
   .ch-resize::after {
     content: ''; display: block; width: 2px; height: 60%;
-    background: var(--border2); border-radius: 1px; transition: background 0.1s, height 0.1s;
+    background: var(--border2); border-radius: 1px; transition: background 0.1s;
   }
   .ch-resize:hover::after, .ch-resize.dragging::after { background: var(--accent); height: 80%; }
   body.col-resizing { cursor: col-resize !important; user-select: none !important; }
   body.col-resizing * { cursor: col-resize !important; }
 
-  /* ── Drag handle & reorder ── */
+  /* ── Drag & drop reorder ── */
   .drag-handle {
     cursor: grab; color: var(--text3); font-size: 16px; line-height: 1;
     padding: 0 2px; opacity: 0; transition: opacity 0.12s; user-select: none;
