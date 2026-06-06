@@ -372,7 +372,7 @@
   /* ── Column headers ── */
   .col-headers {
     display: grid;
-    grid-template-columns: 32px minmax(0,1.4fr) 120px 115px 85px 115px minmax(0,1.05fr) 110px minmax(0,1fr);
+    grid-template-columns: 24px var(--col-cb,32px) var(--col-post,minmax(0,1.4fr)) var(--col-ansvar,120px) var(--col-frist,115px) var(--col-timer,85px) var(--col-status,115px) var(--col-fredag,minmax(0,1.05fr)) var(--col-lenke,110px) var(--col-kommentar,minmax(0,1fr));
     gap: 8px;
     padding: 6px 12px;
     background: var(--surface);
@@ -442,7 +442,7 @@
   .task-rows { overflow: hidden; }
   .task-row {
     display: grid;
-    grid-template-columns: 32px minmax(0,1.4fr) 120px 115px 85px 115px minmax(0,1.05fr) 110px minmax(0,1fr);
+    grid-template-columns: 24px var(--col-cb,32px) var(--col-post,minmax(0,1.4fr)) var(--col-ansvar,120px) var(--col-frist,115px) var(--col-timer,85px) var(--col-status,115px) var(--col-fredag,minmax(0,1.05fr)) var(--col-lenke,110px) var(--col-kommentar,minmax(0,1fr));
     gap: 8px;
     align-items: center;
     padding: 9px 12px;
@@ -699,7 +699,7 @@
   @media (max-width: 900px) {
     .stats-bar { grid-template-columns: repeat(2,1fr); }
     .col-headers { display: none; }
-    .task-row { grid-template-columns: 28px 1fr; gap: 6px; }
+    .task-row { grid-template-columns: 24px 28px 1fr; gap: 6px; }
     .task-row > *:not(:nth-child(1)):not(:nth-child(2)) { display: none; }
   }
 
@@ -1159,4 +1159,68 @@
   @media (max-width: 768px) {
     .vac-add-form { grid-template-columns: 1fr 1fr; }
     .vac-add-form .vac-add-btn { grid-column: 1 / -1; }
+  }
+
+  /* ── Column resize handles ── */
+  .col-headers { position: relative; user-select: none; }
+  .ch {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .ch-resize {
+    position: absolute;
+    right: -4px;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    cursor: col-resize;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ch-resize::after {
+    content: '';
+    display: block;
+    width: 2px;
+    height: 60%;
+    background: var(--border2);
+    border-radius: 1px;
+    transition: background 0.1s, height 0.1s;
+  }
+  .ch-resize:hover::after,
+  .ch-resize.dragging::after {
+    background: var(--accent);
+    height: 80%;
+  }
+  .ch-resize.dragging { cursor: col-resize; }
+  body.col-resizing { cursor: col-resize !important; user-select: none !important; }
+  body.col-resizing * { cursor: col-resize !important; }
+
+  /* ── Drag handle & reorder ── */
+  .drag-handle {
+    cursor: grab;
+    color: var(--text3);
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 2px;
+    opacity: 0;
+    transition: opacity 0.12s;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .task-row:hover .drag-handle { opacity: 1; }
+  .drag-handle:active { cursor: grabbing; }
+  .task-row.drag-over-top {
+    border-top: 2px solid var(--accent) !important;
+  }
+  .task-row.drag-over-bottom {
+    border-bottom: 2px solid var(--accent) !important;
+  }
+  .task-row.dragging-row {
+    opacity: 0.4;
   }

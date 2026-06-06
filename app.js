@@ -506,13 +506,14 @@ function _renderSubGroups(items, secName, hue, today, undersec) {
     si.forEach(function(t){
       var ov=t.frist&&t.frist<today&&t.status!=='Ferdig';
       var sc=STATUS_COLORS[t.status]||{bg:'',color:''};
-      html += '<div class="task-row'+(t.selected?' selected':'')+'" id="row-'+t.id+'">';
+      html += '<div class="task-row'+(t.selected?' selected':'')+'" id="row-'+t.id+'" draggable="true" data-id="'+t.id+'">';
+      html += '<span class="drag-handle" title="Dra for å sortere">&#8942;</span>';
       html += '<input type="checkbox" class="cb" '+(t.selected?'checked':'')+' onchange="toggleSelect('+t.id+')">';
       html += '<div class="task-name-cell">';
       html += '<div class="name-display-wrap" id="namedisplay-'+t.id+'">';
       html += '<div class="task-name-content">'+makeName(t.name)+'</div>';
       html += '<button class="pencil-btn" onclick="startEditName('+t.id+')" title="Rediger (PIN kreves)">&#9998;</button>';
-      if(!t.excelId) html += '<button class="delete-btn" onclick="deleteTask('+t.id+')" title="Slett">\u00d7</button>';
+      html += '<button class="delete-btn" onclick="deleteTask('+t.id+')" title="Slett">\u00d7</button>';
       html += '</div>';
       html += '<div class="name-edit-wrap" id="nameedit-'+t.id+'">';
       html += '<textarea class="name-edit-input" rows="3"'
@@ -1837,8 +1838,8 @@ function renderRisikoList(type) {
   var statusOpts = ['Åpen','Pågår','Lukket'];
   var ROW_GRID = 'display:grid;grid-template-columns:64px 1fr 76px 76px 1fr 1fr 76px 1fr 84px 36px;gap:4px;padding:4px 12px;border-bottom:1px solid #eee;align-items:start;';
   var CELL = 'display:flex;align-items:flex-start;padding:2px 0;';
-  var TA   = 'width:100%;min-height:50px;font-size:11px;font-family:inherit;background:transparent;border:1px solid transparent;border-radius:3px;padding:3px 5px;color:inherit;resize:vertical;line-height:1.45;box-sizing:border-box;';
-  var SEL  = 'font-size:11px;font-family:inherit;background:#fff;border:1px solid #ddd;border-radius:4px;padding:3px 4px;cursor:pointer;width:100%;';
+  var TA   = 'width:100%;min-height:50px;font-size:13px;font-family:inherit;background:transparent;border:1px solid transparent;border-radius:3px;padding:3px 5px;color:inherit;resize:vertical;line-height:1.45;box-sizing:border-box;';
+  var SEL  = 'font-size:13px;font-family:inherit;background:#fff;border:1px solid #ddd;border-radius:4px;padding:3px 4px;cursor:pointer;width:100%;';
 
   var html = '';
   entries.forEach(function(e){
@@ -1847,7 +1848,7 @@ function renderRisikoList(type) {
     var bg = (entries.indexOf(e)%2===0) ? '#fff' : '#fafafa';
     html += '<div style="'+ROW_GRID+'background:'+bg+'">';
     // Nr
-    html += '<div style="'+CELL+'justify-content:center;padding-top:4px"><span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;color:#fff;background:'+clr+';white-space:nowrap">'+esc(e.nr)+'</span></div>';
+    html += '<div style="'+CELL+'justify-content:center;padding-top:4px"><span style="font-size:13px;font-weight:700;padding:2px 6px;border-radius:4px;color:#fff;background:'+clr+';white-space:nowrap">'+esc(e.nr)+'</span></div>';
     // Beskrivelse
     html += '<div style="'+CELL+'"><textarea style="'+TA+'" onchange="risikoChange(\''+type+'\',\''+e.id+'\',\'beskrivelse\',this.value)">'+esc(e.beskrivelse)+'</textarea></div>';
     // Sanns
@@ -1925,4 +1926,190 @@ loadSaved = function(){
     var saved = localStorage.getItem('bestillingsliste_v4');
     if(saved){ var data=JSON.parse(saved); loadRisikoFromSaved(data); }
   } catch(e){}
+};
+
+// ─── COLUMN RESIZE ────────────────────────────────────────────────────────────
+
+var COL_STORAGE_KEY = 'bestillingsliste_cols_v1';
+
+// Default widths in px (except post/fredag/kommentar which stay flexible)
+var COL_DEFAULTS = {
+  cb:       { val: 32,   flex: false },
+  post:     { val: 280,  flex: false },
+  ansvar:   { val: 120,  flex: false },
+  frist:    { val: 115,  flex: false },
+  timer:    { val: 85,   flex: false },
+  status:   { val: 115,  flex: false },
+  fredag:   { val: 160,  flex: false },
+  lenke:    { val: 110,  flex: false },
+  kommentar:{ val: 160,  flex: false }
+};
+
+var colWidths = {};
+
+function loadColWidths() {
+  try {
+    var saved = localStorage.getItem(COL_STORAGE_KEY);
+    colWidths = saved ? JSON.parse(saved) : {};
+  } catch(e) { colWidths = {}; }
+  // Fill defaults for any missing
+  Object.keys(COL_DEFAULTS).forEach(function(k) {
+    if (!colWidths[k]) colWidths[k] = COL_DEFAULTS[k].val;
+  });
+}
+
+function saveColWidths() {
+  try { localStorage.setItem(COL_STORAGE_KEY, JSON.stringify(colWidths)); } catch(e) {}
+}
+
+function applyColWidths() {
+  var root = document.documentElement;
+  var names = { cb:'cb', post:'post', ansvar:'ansvar', frist:'frist', timer:'timer', status:'status', fredag:'fredag', lenke:'lenke', kommentar:'kommentar' };
+  Object.keys(names).forEach(function(k) {
+    root.style.setProperty('--col-' + k, colWidths[k] + 'px');
+  });
+}
+
+function initColResize() {
+  loadColWidths();
+  applyColWidths();
+
+  document.querySelectorAll('.ch-resize').forEach(function(handle) {
+    handle.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var col = handle.getAttribute('data-col');
+      var startX = e.clientX;
+      var startW = colWidths[col] || COL_DEFAULTS[col].val;
+      handle.classList.add('dragging');
+      document.body.classList.add('col-resizing');
+
+      function onMove(e) {
+        var dx = e.clientX - startX;
+        var newW = Math.max(40, startW + dx);
+        colWidths[col] = Math.round(newW);
+        applyColWidths();
+      }
+
+      function onUp() {
+        handle.classList.remove('dragging');
+        document.body.classList.remove('col-resizing');
+        saveColWidths();
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+}
+
+// Double-click handle to reset that column to default
+document.addEventListener('dblclick', function(e) {
+  if (e.target.classList.contains('ch-resize')) {
+    var col = e.target.getAttribute('data-col');
+    if (col && COL_DEFAULTS[col]) {
+      colWidths[col] = COL_DEFAULTS[col].val;
+      applyColWidths();
+      saveColWidths();
+    }
+  }
+});
+
+// Init on DOM ready
+window.addEventListener('DOMContentLoaded', function() {
+  initColResize();
+});
+
+// ─── DRAG & DROP REORDER ──────────────────────────────────────────────────────
+
+var dragSrcId = null;
+
+function initDragAndDrop() {
+  // Use event delegation on the list area
+  var area = document.getElementById('list-area');
+  if (!area) return;
+
+  area.addEventListener('dragstart', function(e) {
+    var row = e.target.closest('.task-row');
+    if (!row) return;
+    // Only allow drag from the handle
+    if (!e.target.classList.contains('drag-handle')) {
+      e.preventDefault();
+      return;
+    }
+    dragSrcId = parseInt(row.getAttribute('data-id'));
+    row.classList.add('dragging-row');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', dragSrcId);
+  });
+
+  area.addEventListener('dragend', function(e) {
+    var row = e.target.closest('.task-row');
+    if (row) row.classList.remove('dragging-row');
+    // Clear all indicators
+    area.querySelectorAll('.drag-over-top, .drag-over-bottom').forEach(function(el) {
+      el.classList.remove('drag-over-top', 'drag-over-bottom');
+    });
+    dragSrcId = null;
+  });
+
+  area.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    var row = e.target.closest('.task-row');
+    // Clear all indicators first
+    area.querySelectorAll('.drag-over-top, .drag-over-bottom').forEach(function(el) {
+      el.classList.remove('drag-over-top', 'drag-over-bottom');
+    });
+    if (!row || row.getAttribute('data-id') == dragSrcId) return;
+    var rect = row.getBoundingClientRect();
+    var mid = rect.top + rect.height / 2;
+    if (e.clientY < mid) {
+      row.classList.add('drag-over-top');
+    } else {
+      row.classList.add('drag-over-bottom');
+    }
+  });
+
+  area.addEventListener('dragleave', function(e) {
+    var row = e.target.closest('.task-row');
+    if (row) {
+      row.classList.remove('drag-over-top', 'drag-over-bottom');
+    }
+  });
+
+  area.addEventListener('drop', function(e) {
+    e.preventDefault();
+    var targetRow = e.target.closest('.task-row');
+    if (!targetRow || dragSrcId === null) return;
+    var targetId = parseInt(targetRow.getAttribute('data-id'));
+    if (targetId === dragSrcId) return;
+
+    var rect = targetRow.getBoundingClientRect();
+    var insertBefore = e.clientY < rect.top + rect.height / 2;
+
+    // Find indices in tasks array
+    var srcIdx = tasks.findIndex(function(t) { return t.id === dragSrcId; });
+    var tgtIdx = tasks.findIndex(function(t) { return t.id === targetId; });
+    if (srcIdx === -1 || tgtIdx === -1) return;
+
+    // Remove src from array
+    var srcTask = tasks.splice(srcIdx, 1)[0];
+    // Recalculate tgt index after removal
+    tgtIdx = tasks.findIndex(function(t) { return t.id === targetId; });
+    var insertIdx = insertBefore ? tgtIdx : tgtIdx + 1;
+    tasks.splice(insertIdx, 0, srcTask);
+
+    scheduleAutoSave();
+    render();
+  });
+}
+
+// Re-init drag after every render
+var _origRender = render;
+render = function() {
+  _origRender();
+  initDragAndDrop();
 };

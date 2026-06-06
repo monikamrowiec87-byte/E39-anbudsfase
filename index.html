@@ -49,16 +49,17 @@
       <button class="filter-btn" id="f-pågår" onclick="toggleFilter('pågår')">Pågår</button>
     </div>
     <div class="summary" id="summary-bar"></div>
-    <div class="col-headers">
-      <span class="ch"></span>
-      <span class="ch">Post</span>
-      <span class="ch">Ansvar / grensesnitt</span>
-      <span class="ch">Frist</span>
-      <span class="ch">Timer (budsjett)</span>
-      <span class="ch">Status</span>
-      <span class="ch">Fredagstatus</span>
-      <span class="ch">Lenke til leveranse</span>
-      <span class="ch">Kommentar</span>
+    <div class="col-headers" id="col-headers">
+      <span class="ch" data-col="drag"></span>
+      <span class="ch" data-col="cb"></span>
+      <span class="ch" data-col="post">Post<span class="ch-resize" data-col="post"></span></span>
+      <span class="ch" data-col="ansvar">Ansvar / grensesnitt<span class="ch-resize" data-col="ansvar"></span></span>
+      <span class="ch" data-col="frist">Frist<span class="ch-resize" data-col="frist"></span></span>
+      <span class="ch" data-col="timer">Timer (budsjett)<span class="ch-resize" data-col="timer"></span></span>
+      <span class="ch" data-col="status">Status<span class="ch-resize" data-col="status"></span></span>
+      <span class="ch" data-col="fredag">Fredagstatus<span class="ch-resize" data-col="fredag"></span></span>
+      <span class="ch" data-col="lenke">Lenke til leveranse<span class="ch-resize" data-col="lenke"></span></span>
+      <span class="ch" data-col="kommentar">Kommentar</span>
     </div>
     <div id="list-area"></div>
   </div>
@@ -94,34 +95,34 @@
   <div id="panel-risiko" style="display:none; padding:0">
     <div style="display:flex;align-items:center;gap:12px;padding:12px 16px 8px;flex-wrap:wrap;border-bottom:1px solid #e5e5e5">
       <div style="display:flex;gap:4px;">
-        <button id="rsub-matrise" onclick="switchRisikoView('matrise')" style="padding:5px 14px;font-size:12px;font-weight:600;border:1px solid #ccc;border-radius:6px;cursor:pointer;background:#1a1a2e;color:#fff;">Matrise</button>
-        <button id="rsub-risikoer" onclick="switchRisikoView('risikoer')" style="padding:5px 14px;font-size:12px;font-weight:600;border:1px solid #ccc;border-radius:6px;cursor:pointer;background:#fff;color:#555;">Risikoer</button>
-        <button id="rsub-muligheter" onclick="switchRisikoView('muligheter')" style="padding:5px 14px;font-size:12px;font-weight:600;border:1px solid #ccc;border-radius:6px;cursor:pointer;background:#fff;color:#555;">Muligheter</button>
+        <button id="rsub-matrise" onclick="switchRisikoView('matrise')" style="padding:5px 14px;font-size:14px;font-weight:600;border:1px solid #ccc;border-radius:6px;cursor:pointer;background:#1a1a2e;color:#fff;">Matrise</button>
+        <button id="rsub-risikoer" onclick="switchRisikoView('risikoer')" style="padding:5px 14px;font-size:14px;font-weight:600;border:1px solid #ccc;border-radius:6px;cursor:pointer;background:#fff;color:#555;">Risikoer</button>
+        <button id="rsub-muligheter" onclick="switchRisikoView('muligheter')" style="padding:5px 14px;font-size:14px;font-weight:600;border:1px solid #ccc;border-radius:6px;cursor:pointer;background:#fff;color:#555;">Muligheter</button>
       </div>
-      <button id="risiko-add-btn" onclick="risikoAdd(risikoView==='muligheter'?'mulighet':'risiko')" style="display:none;padding:5px 14px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;background:#2563eb;color:#fff;">+ Legg til</button>
+      <button id="risiko-add-btn" onclick="risikoAdd(risikoView==='muligheter'?'mulighet':'risiko')" style="display:none;padding:5px 14px;font-size:14px;font-weight:600;border:none;border-radius:6px;cursor:pointer;background:#2563eb;color:#fff;">+ Legg til</button>
     </div>
 
     <div id="rview-matrise" style="display:block;padding:20px">
       <div style="display:flex;gap:0;align-items:flex-start">
         <div style="display:flex;flex-direction:column;align-items:center;margin-right:6px;padding-top:24px">
-          <span style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:11px;font-weight:700;color:#888;letter-spacing:.06em;margin-bottom:6px">↑ SANNSYNLIGHET</span>
+          <span style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:13px;font-weight:700;color:#888;letter-spacing:.06em;margin-bottom:6px">↑ SANNSYNLIGHET</span>
           <div style="display:flex;flex-direction:column">
-            <span style="height:108px;display:flex;align-items:center;font-size:11px;font-weight:600;color:#555;padding-right:8px;justify-content:flex-end;width:60px">Stor</span>
-            <span style="height:108px;display:flex;align-items:center;font-size:11px;font-weight:600;color:#555;padding-right:8px;justify-content:flex-end;width:60px">Middels</span>
-            <span style="height:108px;display:flex;align-items:center;font-size:11px;font-weight:600;color:#555;padding-right:8px;justify-content:flex-end;width:60px">Liten</span>
+            <span style="height:108px;display:flex;align-items:center;font-size:13px;font-weight:600;color:#555;padding-right:8px;justify-content:flex-end;width:60px">Stor</span>
+            <span style="height:108px;display:flex;align-items:center;font-size:13px;font-weight:600;color:#555;padding-right:8px;justify-content:flex-end;width:60px">Middels</span>
+            <span style="height:108px;display:flex;align-items:center;font-size:13px;font-weight:600;color:#555;padding-right:8px;justify-content:flex-end;width:60px">Liten</span>
           </div>
         </div>
         <div style="display:flex;flex-direction:column">
           <div id="rm-grid" style="display:grid;grid-template-columns:repeat(3,108px);grid-template-rows:repeat(3,108px);gap:4px;"></div>
           <div style="display:flex;margin-top:6px">
-            <span style="width:108px;text-align:center;font-size:11px;font-weight:600;color:#555">Liten</span>
-            <span style="width:108px;text-align:center;font-size:11px;font-weight:600;color:#555">Middels</span>
-            <span style="width:108px;text-align:center;font-size:11px;font-weight:600;color:#555">Stor</span>
+            <span style="width:108px;text-align:center;font-size:13px;font-weight:600;color:#555">Liten</span>
+            <span style="width:108px;text-align:center;font-size:13px;font-weight:600;color:#555">Middels</span>
+            <span style="width:108px;text-align:center;font-size:13px;font-weight:600;color:#555">Stor</span>
           </div>
-          <div style="text-align:center;font-size:11px;font-weight:700;color:#888;letter-spacing:.06em;margin-top:4px">KONSEKVENS →</div>
+          <div style="text-align:center;font-size:13px;font-weight:700;color:#888;letter-spacing:.06em;margin-top:4px">KONSEKVENS →</div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:14px;margin-top:16px;font-size:12px;color:#666">
+      <div style="display:flex;align-items:center;gap:14px;margin-top:16px;font-size:14px;color:#666">
         <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#6EC97A;margin-right:4px"></span>Lav
         <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#F5D547;margin-right:4px"></span>Middels
         <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#F5A623;margin-right:4px"></span>Høy
@@ -130,25 +131,25 @@
     </div>
 
     <div id="rview-risikoer" style="display:none">
-      <div style="font-size:12px;font-weight:700;padding:8px 16px;background:#fde8e8;color:#c0392b">Risikoer – Konstruksjoner &amp; Tunneler</div>
-      <div style="display:grid;grid-template-columns:64px 1fr 76px 76px 1fr 1fr 76px 1fr 84px 36px;gap:4px;padding:4px 12px;font-size:10px;font-weight:700;color:#999;border-bottom:1px solid #eee;">
+      <div style="font-size:14px;font-weight:700;padding:8px 16px;background:#fde8e8;color:#c0392b">Risikoer – Konstruksjoner &amp; Tunneler</div>
+      <div style="display:grid;grid-template-columns:64px 1fr 76px 76px 1fr 1fr 76px 1fr 84px 36px;gap:4px;padding:4px 12px;font-size:13px;font-weight:700;color:#999;border-bottom:1px solid #eee;">
         <span>Nr.</span><span>Beskrivelse</span><span>Sanns.</span><span>Kons.</span>
         <span>Hvem/hva tilfører</span><span>Hvem/hvordan reduseres</span>
         <span>Restrisiko</span><span>Forslag håndtering</span><span>Status</span><span></span>
       </div>
       <div id="risiko-list"></div>
-      <button onclick="risikoAdd('risiko')" style="margin:8px 12px 16px;font-size:12px;font-weight:600;padding:6px 14px;background:#fff;border:1px dashed #ccc;border-radius:6px;cursor:pointer;color:#777">+ Ny risiko</button>
+      <button onclick="risikoAdd('risiko')" style="margin:8px 12px 16px;font-size:14px;font-weight:600;padding:6px 14px;background:#fff;border:1px dashed #ccc;border-radius:6px;cursor:pointer;color:#777">+ Ny risiko</button>
     </div>
 
     <div id="rview-muligheter" style="display:none">
-      <div style="font-size:12px;font-weight:700;padding:8px 16px;background:#e8f5e9;color:#2e7d32">Muligheter – Konstruksjoner &amp; Tunneler</div>
-      <div style="display:grid;grid-template-columns:64px 1fr 76px 76px 1fr 1fr 76px 1fr 84px 36px;gap:4px;padding:4px 12px;font-size:10px;font-weight:700;color:#999;border-bottom:1px solid #eee;">
+      <div style="font-size:14px;font-weight:700;padding:8px 16px;background:#e8f5e9;color:#2e7d32">Muligheter – Konstruksjoner &amp; Tunneler</div>
+      <div style="display:grid;grid-template-columns:64px 1fr 76px 76px 1fr 1fr 76px 1fr 84px 36px;gap:4px;padding:4px 12px;font-size:13px;font-weight:700;color:#999;border-bottom:1px solid #eee;">
         <span>Nr.</span><span>Beskrivelse</span><span>Sanns.</span><span>Gevinst</span>
         <span>Hvem/hva muliggjør</span><span>Hvem/hvordan realiseres</span>
         <span>Restgevinst</span><span>Forslag tiltak</span><span>Status</span><span></span>
       </div>
       <div id="mulighet-list"></div>
-      <button onclick="risikoAdd('mulighet')" style="margin:8px 12px 16px;font-size:12px;font-weight:600;padding:6px 14px;background:#fff;border:1px dashed #ccc;border-radius:6px;cursor:pointer;color:#777">+ Ny mulighet</button>
+      <button onclick="risikoAdd('mulighet')" style="margin:8px 12px 16px;font-size:14px;font-weight:600;padding:6px 14px;background:#fff;border:1px dashed #ccc;border-radius:6px;cursor:pointer;color:#777">+ Ny mulighet</button>
     </div>
   </div>
   <div id="panel-ferie" style="display:none">
@@ -238,6 +239,7 @@
   
 
 <style>
+
 /* ── Risiko & Muligheter tab ────────────────────────────────── */
 .risiko-toolbar { display:flex; align-items:center; gap:12px; padding:12px 16px 8px; }
 .risiko-tabs { display:flex; gap:4px; }
