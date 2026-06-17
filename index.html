@@ -313,17 +313,12 @@
 <div class="sp-overlay" id="sp-overlay">
   <div class="sp-modal">
     <h2>&#9729;&#65039; Delt lagring</h2>
-    <p>Koble denne kopien til en egen JSONBin. Hver kopi p&#229; ulike SharePoint-sider har sin egen JSONBin og egne data &#8212; de er ikke synkroniserte med hverandre.</p>
+    <p>Koble til delt lagring ved å skrive inn API Key. Data synkroniseres automatisk mellom alle som er koblet til.</p>
 
     <div id="sp-setup-area">
       <div class="sp-field">
-        <label>JSONBin &ndash; Bin ID</label>
-        <input id="sp-bin-id" type="text" placeholder="f.eks. 69f846c1aaba8821976b6514" autocomplete="off">
-        <div class="sp-hint">Finn denne p&#229; jsonbin.io under Bins</div>
-      </div>
-      <div class="sp-field">
-        <label>JSONBin API Key</label>
-        <input id="sp-api-key" type="password" placeholder="Skriv inn din API Key" autocomplete="off">
+        <label>API Key</label>
+        <input id="sp-api-key" type="password" placeholder="Skriv inn API Key" autocomplete="off">
         <div class="sp-hint">API-n&#248;kkelen lagres bare for den aktive nettleser&#248;kten.</div>
       </div>
     </div>
@@ -334,7 +329,7 @@
       <span>sekunder</span>
     </div>
 
-    <div class="sp-status" id="sp-status">Ikke konfigurert. Fyll inn Bin ID og API Key for å aktivere delt lagring i denne nettleserøkten.</div>
+    <div class="sp-status" id="sp-status">Ikke konfigurert. Fyll inn API Key for å aktivere delt lagring.</div>
 
     <div class="sp-btns">
       <button class="btn btn-primary" id="sp-connect-btn" onclick="spConnect()">Koble til</button>
@@ -344,14 +339,7 @@
       <button class="btn" onclick="spCloseModal()">Lukk</button>
     </div>
 
-    <hr class="sp-divider">
-    <div style="font-size:11px;color:var(--text3);line-height:1.8">
-      <strong style="color:var(--text2)">Slik setter du opp en ny kopi:</strong><br>
-      1. Gå til <strong>jsonbin.io</strong> og opprett en gratis konto<br>
-      2. Klikk <strong>Bins &rarr; Create a Bin</strong>, skriv <code>{}</code>, lagre<br>
-      3. Kopier <strong>Bin ID</strong> og <strong>API Key</strong> hit<br>
-      4. Klikk <strong>Koble til</strong> &mdash; ferdig!
-    </div>
+
   </div>
 </div>
 

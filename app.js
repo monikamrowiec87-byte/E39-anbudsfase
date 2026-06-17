@@ -1426,9 +1426,9 @@ function spLoadConfig() {
     };
 
     try {
+      spCfg.binId = "6a23213ada38895dfe8df485";  // hardcoded
       var saved = JSON.parse(localStorage.getItem(SP_CFG_KEY) || 'null');
       if (saved && typeof saved === 'object') {
-        if (saved.binId) spCfg.binId = saved.binId;
         if (saved.interval) spCfg.interval = saved.interval;
       }
       // Try to load API key from localStorage with TTL check
@@ -1450,15 +1450,13 @@ function spLoadConfig() {
       // ignore invalid config
     }
 
-    var binEl = document.getElementById('sp-bin-id');
     var apiKeyEl = document.getElementById('sp-api-key');
     var intEl = document.getElementById('sp-interval');
 
-    if (binEl) binEl.value = spCfg.binId;
     if (apiKeyEl) apiKeyEl.value = spCfg.apiKey;
     if (intEl) intEl.value = spCfg.interval;
 
-    if (spCfg.binId && spCfg.apiKey) {
+    if (spCfg.apiKey) {
       spSetConnected(true);
       spSetStatus('Koblet til.', 'ok');
       spLastHash = '';
@@ -1478,14 +1476,13 @@ function spLoadConfig() {
 
 
 function spConnect() {
-  var binId    = (document.getElementById('sp-bin-id').value  || '').trim();
+  var binId    = "6a23213ada38895dfe8df485";
   var apiKey   = (document.getElementById('sp-api-key').value || '').trim();
   spLastHash = '';  // force first pull to merge
   var interval = parseInt(document.getElementById('sp-interval').value) || 20;
-  if (!binId) { spSetStatus('Fyll inn Bin ID.', 'err'); return; }
-  if (!apiKey) { spSetStatus('Fyll inn JSONBin API Key.', 'err'); return; }
+  if (!apiKey) { spSetStatus('Fyll inn API Key.', 'err'); return; }
   spCfg = { binId: binId, apiKey: apiKey, interval: interval };
-  try { localStorage.setItem(SP_CFG_KEY, JSON.stringify({binId: binId, interval: interval})); } catch(e) {}
+  try { localStorage.setItem(SP_CFG_KEY, JSON.stringify({interval: interval})); } catch(e) {}
   try { localStorage.setItem(SP_API_KEY_KEY, apiKey); localStorage.setItem(SP_API_KEY_TS_KEY, Date.now().toString()); } catch(e) {}
   spSetConnected(true);
   spSetStatus('Kobler til…', '');
