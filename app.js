@@ -1685,9 +1685,11 @@ function spMerge(remote) {
   try {
     localStorage.setItem('bestillingsliste_v4', JSON.stringify({
       tasks: tasks, sectionOpen: sectionOpen, undersecOpen: undersecOpen,
+      undersecBudget: undersecBudget,
       SECTIONS_DATA: SECTIONS_DATA, vacations: vacations, vacIdCounter: vacIdCounter,
       projectLinks: projectLinks, linkIdCounter: linkIdCounter,
-      modelLinks: modelLinks, modelIdCounter: modelIdCounter
+      modelLinks: modelLinks, modelIdCounter: modelIdCounter,
+      risikoEntries: risikoEntries, muligheterEntries: muligheterEntries
     }));
   } catch(e) {}
   render();
