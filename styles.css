@@ -813,14 +813,13 @@
   }
 
   .sub-header{
-    padding:0 14px 0 11px;
+    padding:6px 14px 6px 11px;
     background:var(--surface);
     border-bottom:0.5px solid var(--border);
     border-left:2px solid var(--sub-accent, #888);
-    display:grid;
-    grid-template-columns: 20px 32px var(--col-post,minmax(0,1.4fr)) var(--col-ansvar,120px) var(--col-frist,115px) var(--col-timer,85px) var(--col-status,115px) var(--col-fredag,minmax(0,1.05fr)) var(--col-lenke,110px) var(--col-kommentar,minmax(0,1fr));
-    gap: 8px;
-    align-items: center;
+    display:flex;
+    align-items:center;
+    gap:8px;
     min-height: 38px;
   }
   .sub-cb { width:14px; height:14px; cursor:pointer; accent-color:var(--accent); flex-shrink:0; }
@@ -837,9 +836,8 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    grid-column: 6 / -1;  /* from timer column to end */
-    overflow: hidden;
-    min-width: 0;
+    margin-left: auto;
+    flex-shrink: 0;
   }
   .sub-name-wrap {
     display: flex;

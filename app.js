@@ -418,9 +418,7 @@ function render() {
         var _genKeyEsc = _genKey.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
         var _genBgt = undersecBudget[_genKey] || {};
         html += '<div class="sub-header" style="--sub-accent:'+secColor+'">'
-          + '<span></span><span></span>'
           + '<span class="sub-name-wrap"><span style="font-size:11px;color:var(--text2)">Generelle poster</span></span>'
-          + '<span></span><span></span>'
           + '<span class="undersec-budget-all">'
           +   '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Timer"'
           +     ' value="'+(_genBgt.timer!=null&&_genBgt.timer!==''?_genBgt.timer:'')+'"'
@@ -517,7 +515,6 @@ function _renderSubGroups(items, secName, hue, today, undersec) {
       var sc2='hsl('+hue+',45%,38%)';
       var allS=si.length>0&&si.every(function(t){return t.selected;});
       html += '<div class="sub-header" style="--sub-accent:'+sc2+'">';
-      html += '<span></span>';
       html += '<input type="checkbox" class="sub-cb"'+(allS?' checked':'')
         +' data-sec="'+secName.replace(/"/g,'&quot;')+'"'
         +' data-sub="'+sub.replace(/"/g,'&quot;')+'"'
@@ -530,8 +527,6 @@ function _renderSubGroups(items, secName, hue, today, undersec) {
         +'<span class="sub-edit-hint" ondblclick="startEditSubName(this.previousElementSibling)">&#9998;</span>'
         +'<span class="sub-count">'+si.length+'</span>'
         +'</span>';
-      html += '<span></span>';
-      html += '<span></span>';
       var _bkey = secName+'||'+(undersec||'')+'||'+sub;
       var _bkeyEsc = _bkey.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
       var _bgt = undersecBudget[_bkey] || {};
