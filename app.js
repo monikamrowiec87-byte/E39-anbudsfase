@@ -2112,61 +2112,73 @@ render = function() {
   initDragAndDrop();
 };
 
-// ─── EXCEL EXPORT med formattering ───────────────────────────────────────────
+// ─── EXCEL EXPORT med formattering (ExcelJS) ─────────────────────────────────
 
 function exportToExcel() {
-  if (typeof XLSX === 'undefined') {
-    showToast('xlsx.min.js ikke lastet – legg filen i samme mappe som index.html');
+  if (typeof ExcelJS === 'undefined') {
+    showToast('exceljs.min.js ikke lastet – legg filen i samme mappe som index.html');
     return;
   }
 
-  // Status colours (ARGB hex, no #)
-  var STATUS_FILL = {
-    'Ikke startet': 'FFB4B2A9',
-    'Pågår':        'FFEF9F27',
-    'Til review':   'FF378ADD',
-    'Ferdig':       'FF1D9E75',
-    'Blokkert':     'FFE24B4A'
-  };
-  var STATUS_FONT = {
-    'Ikke startet': 'FF444444',
-    'Pågår':        'FF7A4A00',
-    'Til review':   'FF0A3A6B',
-    'Ferdig':       'FF0A4A36',
-    'Blokkert':     'FF6B0A0A'
-  };
-
-  // Section background colours (cycle through hues matching the app)
-  var SEC_HUE = [210,160,25,280,340,195,135,50,305,170,0,240,90,320,60,185,265];
-  var secNames = Object.keys(SECTIONS_DATA);
-
-  function hslToHex(h, s, l) {
+  function hslToArgb(h, s, l) {
     s /= 100; l /= 100;
-    var k = function(n) { return (n + h/30) % 12; };
-    var a = s * Math.min(l, 1-l);
+    var a = s * Math.min(l, 1 - l);
     var f = function(n) {
-      var v = l - a * Math.max(-1, Math.min(k(n)-3, Math.min(9-k(n), 1)));
-      return Math.round(255*v).toString(16).padStart(2,'0').toUpperCase();
+      var k = (n + h / 30) % 12;
+      var v = l - a * Math.max(-1, Math.min(k - 3, Math.min(9 - k, 1)));
+      return Math.round(255 * v).toString(16).padStart(2, '0').toUpperCase();
     };
     return 'FF' + f(0) + f(8) + f(4);
   }
 
-  var secFills = {};
-  secNames.forEach(function(s, i) {
-    secFills[s] = hslToHex(SEC_HUE[i % SEC_HUE.length], 55, 92); // very light tint
-  });
+  var SEC_HUE = [210,160,25,280,340,195,135,50,305,170,0,240,90,320,60,185,265];
+  var secNames = Object.keys(SECTIONS_DATA);
 
-  // Build rows
+  var STATUS_FILL  = { 'Ikke startet':'FFD6D4CF', 'Pågår':'FFFDE9C2', 'Til review':'FFD0E5F7', 'Ferdig':'FFC2EBE0', 'Blokkert':'FFF8CECE' };
+  var STATUS_FONT  = { 'Ikke startet':'FF555555', 'Pågår':'FF7A4A00', 'Til review':'FF0A3A6B', 'Ferdig':'FF0A4A36', 'Blokkert':'FF6B0A0A' };
+
   var headers = [
     'Seksjon','Underkapittel','Sub-gruppe','Post-ID',
     'Navn / Beskrivelse','Valgt','Eier','Ansvar / Grensesnitt',
-    'Frist','Timer (budsjett)','Status','Fredagstatus (%)',
+    'Frist','Timer','Status','Fredagstatus (%)',
     'Lenke til leveranse','Kommentar'
   ];
 
-  var aoa = [headers];
-  tasks.forEach(function(t) {
-    aoa.push([
+  var wb = new ExcelJS.Workbook();
+  wb.creator = 'Bestillingsliste';
+  var ws = wb.addWorksheet('Bestillingsliste', { views: [{ state:'frozen', ySplit:1 }] });
+
+  // Column widths
+  ws.columns = [
+    {width:22},{width:15},{width:28},{width:14},
+    {width:55},{width:8},{width:18},{width:24},
+    {width:12},{width:10},{width:16},{width:14},
+    {width:30},{width:38}
+  ];
+
+  // Header row
+  var headerRow = ws.addRow(headers);
+  headerRow.height = 22;
+  headerRow.eachCell(function(cell) {
+    cell.fill   = { type:'pattern', pattern:'solid', fgColor:{argb:'FF1A2B3C'} };
+    cell.font   = { name:'Calibri', size:10, bold:true, color:{argb:'FFFFFFFF'} };
+    cell.alignment = { vertical:'middle', horizontal:'center', wrapText:false };
+    cell.border = {
+      bottom: { style:'medium', color:{argb:'FF4A90D9'} }
+    };
+  });
+
+  // Data rows
+  tasks.forEach(function(t, i) {
+    var secIdx = secNames.indexOf(t.section);
+    var hue    = SEC_HUE[secIdx % SEC_HUE.length];
+    var secArgb = hslToArgb(hue, 45, 94);   // very light section tint
+    var secDark = hslToArgb(hue, 50, 38);   // darker for section column text
+
+    var st = t.status || 'Ikke startet';
+    var isEven = i % 2 === 0;
+
+    var rowData = [
       t.section      || '',
       t.undersec     || '',
       t.sub          || '',
@@ -2177,92 +2189,78 @@ function exportToExcel() {
       t.ansvar       || '',
       t.frist        || '',
       t.timer        || '',
-      t.status       || 'Ikke startet',
+      st,
       t.fredagstatus || '',
       t.link         || '',
       t.comment      || ''
-    ]);
+    ];
+
+    var row = ws.addRow(rowData);
+    row.height = 18;
+
+    row.eachCell({ includeEmpty:true }, function(cell, colNum) {
+      var col = colNum - 1; // 0-indexed
+
+      // Default styling
+      cell.font = { name:'Calibri', size:10 };
+      cell.alignment = { vertical:'top', wrapText: col === 4 };
+      cell.border = {
+        top:    { style:'hair', color:{argb:'FFE0E0E0'} },
+        bottom: { style:'hair', color:{argb:'FFE0E0E0'} },
+        left:   { style:'hair', color:{argb:'FFE0E0E0'} },
+        right:  { style:'hair', color:{argb:'FFE0E0E0'} }
+      };
+
+      if (col === 0) {
+        // Seksjon-kolonne: farget bakgrunn + bold
+        cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb: secArgb} };
+        cell.font = { name:'Calibri', size:10, bold:true, color:{argb: secDark} };
+        cell.alignment = { vertical:'top', wrapText:false };
+        // Left border accent
+        cell.border.left = { style:'medium', color:{argb: secDark} };
+      } else if (col === 10) {
+        // Status-kolonne: fargekodet
+        cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb: STATUS_FILL[st] || 'FFFFFFFF'} };
+        cell.font = { name:'Calibri', size:10, bold:true, color:{argb: STATUS_FONT[st] || 'FF000000'} };
+        cell.alignment = { vertical:'middle', horizontal:'center' };
+      } else if (col === 5) {
+        // Valgt-kolonne: senter
+        cell.alignment = { vertical:'top', horizontal:'center' };
+        cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb: isEven ? 'FFFFFFFF' : 'FFF7F8FA'} };
+        if (t.selected) {
+          cell.font = { name:'Calibri', size:10, bold:true, color:{argb:'FF1D9E75'} };
+        }
+      } else {
+        // Zebra
+        cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb: isEven ? 'FFFFFFFF' : 'FFF7F8FA'} };
+      }
+    });
   });
 
-  var wb = XLSX.utils.book_new();
-  var ws = XLSX.utils.aoa_to_sheet(aoa);
+  // Auto-filter on header row
+  ws.autoFilter = { from:'A1', to: String.fromCharCode(64 + headers.length) + '1' };
 
-  // Column widths
-  ws['!cols'] = [
-    {wch:22},{wch:14},{wch:28},{wch:14},{wch:55},
-    {wch:8},{wch:18},{wch:22},{wch:12},{wch:10},
-    {wch:14},{wch:14},{wch:30},{wch:35}
-  ];
+  // Generate and download
+  wb.xlsx.writeBuffer().then(function(buffer) {
+    var blob = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    var url  = URL.createObjectURL(blob);
 
-  // Freeze top row
-  ws['!freeze'] = {xSplit:0, ySplit:1};
+    var today = new Date();
+    var dateStr = today.getFullYear() + '-'
+      + String(today.getMonth()+1).padStart(2,'0') + '-'
+      + String(today.getDate()).padStart(2,'0');
+    var projectName = (document.getElementById('project-name')||{}).textContent || 'Bestillingsliste';
+    var safeName = projectName.replace(/[^\w\sæøåÆØÅ\-]/g,'').trim().slice(0,40);
+    var fileName = safeName + ' ' + dateStr + '.xlsx';
 
-  var range = XLSX.utils.decode_range(ws['!ref']);
-  var numCols = headers.length;
-
-  for (var R = 0; R <= range.e.r; R++) {
-    for (var C = 0; C < numCols; C++) {
-      var addr = XLSX.utils.encode_cell({r:R, c:C});
-      if (!ws[addr]) ws[addr] = {v:'', t:'s'};
-      if (!ws[addr].s) ws[addr].s = {};
-
-      // All cells: border + font
-      ws[addr].s.border = {
-        top:    {style:'thin', color:{rgb:'FFD0D0D0'}},
-        bottom: {style:'thin', color:{rgb:'FFD0D0D0'}},
-        left:   {style:'thin', color:{rgb:'FFD0D0D0'}},
-        right:  {style:'thin', color:{rgb:'FFD0D0D0'}}
-      };
-      ws[addr].s.font = {name:'Calibri', sz:10};
-      ws[addr].s.alignment = {vertical:'top', wrapText: C===4}; // wrap Navn column
-
-      if (R === 0) {
-        // Header row
-        ws[addr].s.fill = {patternType:'solid', fgColor:{rgb:'FF1A2B3C'}};
-        ws[addr].s.font = {name:'Calibri', sz:10, bold:true, color:{rgb:'FFFFFFFF'}};
-        ws[addr].s.alignment = {vertical:'center', horizontal:'center'};
-      } else {
-        // Data rows
-        var task = tasks[R-1];
-        var secFill = secFills[task.section] || 'FFFFFFFF';
-
-        if (C === 10) {
-          // Status column – coloured cell
-          var st = task.status || 'Ikke startet';
-          ws[addr].s.fill = {patternType:'solid', fgColor:{rgb: STATUS_FILL[st] || 'FFFFFFFF'}};
-          ws[addr].s.font = {name:'Calibri', sz:10, bold:true, color:{rgb: STATUS_FONT[st] || 'FF000000'}};
-          ws[addr].s.alignment = {vertical:'center', horizontal:'center'};
-        } else if (C === 0) {
-          // Section column – tinted background, bold
-          ws[addr].s.fill = {patternType:'solid', fgColor:{rgb: secFill}};
-          ws[addr].s.font = {name:'Calibri', sz:10, bold:true};
-        } else {
-          // Normal data cell – very subtle section tint on even columns
-          ws[addr].s.fill = {patternType:'solid', fgColor:{rgb:'FFFFFFFF'}};
-        }
-
-        // Alternating row shading based on section
-        if (C !== 0 && C !== 10) {
-          // subtle zebra within section
-          var secIdx = secNames.indexOf(task.section);
-          if (secIdx % 2 === 1) {
-            ws[addr].s.fill = {patternType:'solid', fgColor:{rgb:'FFF7F8FA'}};
-          }
-        }
-      }
-    }
-  }
-
-  XLSX.utils.book_append_sheet(wb, ws, 'Bestillingsliste');
-
-  var today = new Date();
-  var dateStr = today.getFullYear() + '-'
-    + String(today.getMonth()+1).padStart(2,'0') + '-'
-    + String(today.getDate()).padStart(2,'0');
-  var projectName = (document.getElementById('project-name')||{}).textContent || 'Bestillingsliste';
-  var safeName = projectName.replace(/[^\w\sæøåÆØÅ\-]/g,'').trim().slice(0,40);
-  var fileName = safeName + ' ' + dateStr + '.xlsx';
-
-  XLSX.writeFile(wb, fileName);
-  showToast('Eksportert: ' + fileName);
+    var a = document.createElement('a');
+    a.href = url; a.download = fileName;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    showToast('Eksportert: ' + fileName);
+  }).catch(function(e) {
+    showToast('Eksport feilet: ' + e.message);
+    console.error(e);
+  });
 }
