@@ -506,20 +506,22 @@ function _renderSubGroups(items, secName, hue, today, undersec) {
         + '<input class="undersec-budget-input" type="number" min="0" placeholder="–"'
         +   ' value="'+(_bgt.timer!=null&&_bgt.timer!==''?_bgt.timer:'')+'"'
         +   ' title="Budsjetterte timer"'
+        +   ' oninput="setUndersecBudget('+JSON.stringify(_bkey)+',\'timer\',this.value)"'
         +   ' onchange="setUndersecBudget('+JSON.stringify(_bkey)+',\'timer\',this.value)"'
-        +   ' onclick="event.stopPropagation()" />'
+        +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
         + '<label class="undersec-budget-label">Revidert budsjett</label>'
         + '<input class="undersec-budget-input" type="number" min="0" placeholder="–"'
         +   ' value="'+(_bgt.revidert!=null&&_bgt.revidert!==''?_bgt.revidert:'')+'"'
         +   ' title="Revidert budsjett"'
+        +   ' oninput="setUndersecBudget('+JSON.stringify(_bkey)+',\'revidert\',this.value)"'
         +   ' onchange="setUndersecBudget('+JSON.stringify(_bkey)+',\'revidert\',this.value)"'
-        +   ' onclick="event.stopPropagation()" />'
+        +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
         + '<label class="undersec-budget-label">Revisjonsdato</label>'
         + '<input class="undersec-budget-input undersec-budget-date" type="date"'
         +   ' value="'+(_bgt.revisjonsDato||'')+'"'
         +   ' title="Dato for revisjon"'
         +   ' onchange="setUndersecBudget('+JSON.stringify(_bkey)+',\'revisjonsDato\',this.value)"'
-        +   ' onclick="event.stopPropagation()" />'
+        +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
         + '</span>';
       html += '<button class="sub-add-btn"'
         +' data-sec="'+secName.replace(/"/g,'&quot;')+'"'
@@ -1572,9 +1574,11 @@ async function spPush() {
     var ts = Date.now();
     var payload = {
       tasks: tasks, sectionOpen: sectionOpen, undersecOpen: undersecOpen,
+      undersecBudget: undersecBudget,
       SECTIONS_DATA: SECTIONS_DATA, vacations: vacations, vacIdCounter: vacIdCounter,
       projectLinks: projectLinks, linkIdCounter: linkIdCounter,
       modelLinks: modelLinks, modelIdCounter: modelIdCounter,
+      risikoEntries: risikoEntries, muligheterEntries: muligheterEntries,
       ts: ts
     };
     var r = await fetch(spUrl(), {
@@ -1664,6 +1668,7 @@ function spMerge(remote) {
   // Restore other state
   if (remote.sectionOpen)  Object.assign(sectionOpen, remote.sectionOpen);
   if (remote.undersecOpen) Object.assign(undersecOpen, remote.undersecOpen);
+  if (remote.undersecBudget) Object.assign(undersecBudget, remote.undersecBudget);
   if (remote.vacations) {
     vacations = remote.vacations;
     vacIdCounter = remote.vacIdCounter || (Math.max.apply(null, [0].concat(vacations.map(function(v){return v.id||0;}))) + 1);
