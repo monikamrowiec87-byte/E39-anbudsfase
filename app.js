@@ -494,42 +494,51 @@ function _renderSubGroups(items, secName, hue, today, undersec) {
       var sc2='hsl('+hue+',45%,38%)';
       var allS=si.length>0&&si.every(function(t){return t.selected;});
       html += '<div class="sub-header" style="--sub-accent:'+sc2+'">';
+      html += '<span></span>'; // drag col
       html += '<input type="checkbox" class="sub-cb"'+(allS?' checked':'')
         +' data-sec="'+secName.replace(/"/g,'&quot;')+'"'
         +' data-sub="'+sub.replace(/"/g,'&quot;')+'"'
         +' onchange="handleSubCb(this)" title="Velg alle">';
-      html += '<span class="sub-name"'
+      html += '<span class="sub-name-wrap">'
+        +'<span class="sub-name"'
         +' data-sec="'+secName.replace(/"/g,'&quot;')+'"'
         +' data-sub="'+sub.replace(/"/g,'&quot;')+'"'
-        +' ondblclick="startEditSubName(this)">'+esc(sub)+'</span>';
-      html += '<span class="sub-edit-hint" ondblclick="startEditSubName(this.previousElementSibling)">&#9998;</span>';
-      html += '<span class="sub-count">'+si.length+'</span>';
+        +' ondblclick="startEditSubName(this)">'+esc(sub)+'</span>'
+        +'<span class="sub-edit-hint" ondblclick="startEditSubName(this.previousElementSibling)">&#9998;</span>'
+        +'<span class="sub-count">'+si.length+'</span>'
+        +'</span>';
+      html += '<span></span>'; // ansvar col
+      html += '<span></span>'; // frist col
       var _bkey = secName+'||'+(undersec||'')+'||'+sub;
       var _bkeyEsc = _bkey.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
       var _bgt = undersecBudget[_bkey] || {};
       html += '<span class="undersec-budget-group">'
-        + '<label class="undersec-budget-label">Timer</label>'
-        + '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="–"'
+        + '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Timer"'
         +   ' value="'+(_bgt.timer!=null&&_bgt.timer!==''?_bgt.timer:'')+'"'
         +   ' data-bkey="'+_bkeyEsc+'" data-bfield="timer"'
         +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
-        + '<label class="undersec-budget-label">Revidert budsjett</label>'
+        + '</span>';
+      html += '<span></span>'; // status col (empty)
+      html += '<span class="undersec-budget-extra">'
+        + '<label class="undersec-budget-label">Rev.budsjett</label>'
         + '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="–"'
         +   ' value="'+(_bgt.revidert!=null&&_bgt.revidert!==''?_bgt.revidert:'')+'"'
         +   ' data-bkey="'+_bkeyEsc+'" data-bfield="revidert"'
         +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
-        + '<label class="undersec-budget-label">Revisjonsdato</label>'
+        + '<label class="undersec-budget-label">Dato</label>'
         + '<input class="undersec-budget-input undersec-budget-date budget-field" type="date"'
         +   ' value="'+(_bgt.revisjonsDato||'')+'"'
         +   ' data-bkey="'+_bkeyEsc+'" data-bfield="revisjonsDato"'
         +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
         + '</span>';
-      html += '<button class="sub-add-btn"'
+      html += '<span></span>'; // lenke col
+      html += '<span class="sub-add-wrap"><button class="sub-add-btn"'
         +' data-sec="'+secName.replace(/"/g,'&quot;')+'"'
         +' data-sub="'+sub.replace(/"/g,'&quot;')+'"'
         +' data-undersec="'+(undersec||'').replace(/"/g,'&quot;')+'"'
-        +' onclick="handleSubAdd(this)">+ Legg til post</button>';
+        +' onclick="handleSubAdd(this)">+ Legg til post</button></span>';
       html += '</div>';
+      
     }
     si.forEach(function(t){
       var ov=t.frist&&t.frist<today&&t.status!=='Ferdig';
