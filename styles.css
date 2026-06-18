@@ -833,18 +833,11 @@
   }
 
   /* Budget fields — timer sits in col 6, extras in col 7 (fredag) */
-  .undersec-budget-group {
+  .undersec-budget-all {
     display: flex;
     align-items: center;
-    gap: 4px;
-    overflow: hidden;
-    min-width: 0;
-  }
-  .undersec-budget-extra {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    grid-column: 7; /* fredag column */
+    gap: 6px;
+    grid-column: 6 / -1;  /* from timer column to end */
     overflow: hidden;
     min-width: 0;
   }

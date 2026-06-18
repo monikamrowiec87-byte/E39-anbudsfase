@@ -414,9 +414,32 @@ function render() {
       html += '<div class="task-rows">';
       if(isGen){
         var genItems = _filterTasks(tasks.filter(function(t){return t.section===secName;}), q, today);
+        var _genKey = secName+'||||';
+        var _genKeyEsc = _genKey.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+        var _genBgt = undersecBudget[_genKey] || {};
+        html += '<div class="sub-header" style="--sub-accent:'+sc+'">'
+          + '<span></span><span></span>'
+          + '<span class="sub-name-wrap"><span style="font-size:11px;color:var(--text2)">Generelle poster</span></span>'
+          + '<span></span><span></span>'
+          + '<span class="undersec-budget-all">'
+          +   '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Timer"'
+          +     ' value="'+(_genBgt.timer!=null&&_genBgt.timer!==''?_genBgt.timer:'')+'"'
+          +     ' data-bkey="'+_genKeyEsc+'" data-bfield="timer"'
+          +     ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
+          +   '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Rev.budsjett"'
+          +     ' value="'+(_genBgt.revidert!=null&&_genBgt.revidert!==''?_genBgt.revidert:'')+'"'
+          +     ' data-bkey="'+_genKeyEsc+'" data-bfield="revidert"'
+          +     ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
+          +   '<input class="undersec-budget-input undersec-budget-date budget-field" type="date"'
+          +     ' value="'+(_genBgt.revisjonsDato||'')+'"'
+          +     ' data-bkey="'+_genKeyEsc+'" data-bfield="revisjonsDato"'
+          +     ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
+          +   '<button class="sub-add-btn"'
+          +     ' data-sec="0 Generell" data-sub="" data-undersec=""'
+          +     ' onclick="handleSubAdd(this)">+ Legg til post</button>'
+          + '</span>'
+          + '</div>';
         html += _renderSubGroups(genItems, secName, hue, today, '');
-        html += '<button class="sub-add-btn" style="margin:6px 12px;display:inline-block"'
-          +' onclick="addTask(\'0 Generell\',\'\',\'\')">+ Legg til post</button>';
       } else {
         var undersecs = [];
         tasks.filter(function(t){return t.section===secName;}).forEach(function(t){
@@ -494,7 +517,7 @@ function _renderSubGroups(items, secName, hue, today, undersec) {
       var sc2='hsl('+hue+',45%,38%)';
       var allS=si.length>0&&si.every(function(t){return t.selected;});
       html += '<div class="sub-header" style="--sub-accent:'+sc2+'">';
-      html += '<span></span>'; // drag col
+      html += '<span></span>';
       html += '<input type="checkbox" class="sub-cb"'+(allS?' checked':'')
         +' data-sec="'+secName.replace(/"/g,'&quot;')+'"'
         +' data-sub="'+sub.replace(/"/g,'&quot;')+'"'
@@ -507,36 +530,30 @@ function _renderSubGroups(items, secName, hue, today, undersec) {
         +'<span class="sub-edit-hint" ondblclick="startEditSubName(this.previousElementSibling)">&#9998;</span>'
         +'<span class="sub-count">'+si.length+'</span>'
         +'</span>';
-      html += '<span></span>'; // ansvar col
-      html += '<span></span>'; // frist col
+      html += '<span></span>';
+      html += '<span></span>';
       var _bkey = secName+'||'+(undersec||'')+'||'+sub;
       var _bkeyEsc = _bkey.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
       var _bgt = undersecBudget[_bkey] || {};
-      html += '<span class="undersec-budget-group">'
+      html += '<span class="undersec-budget-all">'
         + '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Timer"'
         +   ' value="'+(_bgt.timer!=null&&_bgt.timer!==''?_bgt.timer:'')+'"'
         +   ' data-bkey="'+_bkeyEsc+'" data-bfield="timer"'
         +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
-        + '</span>';
-      html += '<span></span>'; // status col (empty)
-      html += '<span class="undersec-budget-extra">'
-        + '<label class="undersec-budget-label">Rev.budsjett</label>'
-        + '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="–"'
+        + '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Rev.budsjett"'
         +   ' value="'+(_bgt.revidert!=null&&_bgt.revidert!==''?_bgt.revidert:'')+'"'
         +   ' data-bkey="'+_bkeyEsc+'" data-bfield="revidert"'
         +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
-        + '<label class="undersec-budget-label">Dato</label>'
         + '<input class="undersec-budget-input undersec-budget-date budget-field" type="date"'
         +   ' value="'+(_bgt.revisjonsDato||'')+'"'
         +   ' data-bkey="'+_bkeyEsc+'" data-bfield="revisjonsDato"'
         +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
+        + '<button class="sub-add-btn"'
+        +   ' data-sec="'+secName.replace(/"/g,'&quot;')+'"'
+        +   ' data-sub="'+sub.replace(/"/g,'&quot;')+'"'
+        +   ' data-undersec="'+(undersec||'').replace(/"/g,'&quot;')+'"'
+        +   ' onclick="handleSubAdd(this)">+ Legg til post</button>'
         + '</span>';
-      html += '<span></span>'; // lenke col
-      html += '<span class="sub-add-wrap"><button class="sub-add-btn"'
-        +' data-sec="'+secName.replace(/"/g,'&quot;')+'"'
-        +' data-sub="'+sub.replace(/"/g,'&quot;')+'"'
-        +' data-undersec="'+(undersec||'').replace(/"/g,'&quot;')+'"'
-        +' onclick="handleSubAdd(this)">+ Legg til post</button></span>';
       html += '</div>';
       
     }
