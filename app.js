@@ -500,27 +500,23 @@ function _renderSubGroups(items, secName, hue, today, undersec) {
       html += '<span class="sub-edit-hint" ondblclick="startEditSubName(this.previousElementSibling)">&#9998;</span>';
       html += '<span class="sub-count">'+si.length+'</span>';
       var _bkey = secName+'||'+(undersec||'')+'||'+sub;
+      var _bkeyEsc = _bkey.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
       var _bgt = undersecBudget[_bkey] || {};
       html += '<span class="undersec-budget-group">'
         + '<label class="undersec-budget-label">Timer</label>'
-        + '<input class="undersec-budget-input" type="number" min="0" placeholder="–"'
+        + '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="–"'
         +   ' value="'+(_bgt.timer!=null&&_bgt.timer!==''?_bgt.timer:'')+'"'
-        +   ' title="Budsjetterte timer"'
-        +   ' oninput="setUndersecBudget('+JSON.stringify(_bkey)+',\'timer\',this.value)"'
-        +   ' onchange="setUndersecBudget('+JSON.stringify(_bkey)+',\'timer\',this.value)"'
+        +   ' data-bkey="'+_bkeyEsc+'" data-bfield="timer"'
         +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
         + '<label class="undersec-budget-label">Revidert budsjett</label>'
-        + '<input class="undersec-budget-input" type="number" min="0" placeholder="–"'
+        + '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="–"'
         +   ' value="'+(_bgt.revidert!=null&&_bgt.revidert!==''?_bgt.revidert:'')+'"'
-        +   ' title="Revidert budsjett"'
-        +   ' oninput="setUndersecBudget('+JSON.stringify(_bkey)+',\'revidert\',this.value)"'
-        +   ' onchange="setUndersecBudget('+JSON.stringify(_bkey)+',\'revidert\',this.value)"'
+        +   ' data-bkey="'+_bkeyEsc+'" data-bfield="revidert"'
         +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
         + '<label class="undersec-budget-label">Revisjonsdato</label>'
-        + '<input class="undersec-budget-input undersec-budget-date" type="date"'
+        + '<input class="undersec-budget-input undersec-budget-date budget-field" type="date"'
         +   ' value="'+(_bgt.revisjonsDato||'')+'"'
-        +   ' title="Dato for revisjon"'
-        +   ' onchange="setUndersecBudget('+JSON.stringify(_bkey)+',\'revisjonsDato\',this.value)"'
+        +   ' data-bkey="'+_bkeyEsc+'" data-bfield="revisjonsDato"'
         +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
         + '</span>';
       html += '<button class="sub-add-btn"'
@@ -1734,6 +1730,22 @@ window.addEventListener('DOMContentLoaded', function () {
   renderLinks();
   renderModelLinks();
   spLoadConfig();
+
+  // Delegated listener for budget fields (avoids inline handler quoting issues)
+  document.body.addEventListener('change', function(e) {
+    var el = e.target;
+    if (!el.classList.contains('budget-field')) return;
+    var key = el.getAttribute('data-bkey');
+    var field = el.getAttribute('data-bfield');
+    if (key && field) setUndersecBudget(key, field, el.value);
+  });
+  document.body.addEventListener('input', function(e) {
+    var el = e.target;
+    if (!el.classList.contains('budget-field')) return;
+    var key = el.getAttribute('data-bkey');
+    var field = el.getAttribute('data-bfield');
+    if (key && field) setUndersecBudget(key, field, el.value);
+  });
 });
 
 
