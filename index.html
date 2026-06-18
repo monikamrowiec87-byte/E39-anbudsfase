@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -20,6 +20,7 @@
       <button class="sp-btn" id="sp-btn" onclick="spOpenModal()"><div class="sp-dot" id="sp-dot"></div><span id="sp-label">Delt lagring</span></button>
       <button class="btn" onclick="changePinFlow()">&#128274; PIN</button>
       <button class="btn" onclick="clearAll()">Nullstill</button>
+      <button class="btn" onclick="exportToExcel()" title="Eksporter bestillingslista til Excel">&#128202; Eksporter</button>
       <button class="btn btn-primary" onclick="saveData()">Lagre</button>
     </div>
   </div>

@@ -2111,3 +2111,95 @@ render = function() {
   _origRender();
   initDragAndDrop();
 };
+
+// ─── EXCEL EXPORT ─────────────────────────────────────────────────────────────
+
+function exportToExcel() {
+  if (typeof XLSX === 'undefined') {
+    showToast('SheetJS ikke lastet – prøv igjen om et øyeblikk');
+    return;
+  }
+
+  var STATUS_NO = {
+    'Ikke startet': 'Ikke startet',
+    'Pågår': 'Pågår',
+    'Til review': 'Til review',
+    'Ferdig': 'Ferdig',
+    'Blokkert': 'Blokkert'
+  };
+
+  // Header row
+  var rows = [[
+    'Seksjon',
+    'Underkapittel',
+    'Sub-gruppe',
+    'Post-ID',
+    'Navn / Beskrivelse',
+    'Valgt',
+    'Eier',
+    'Ansvar / Grensesnitt',
+    'Frist',
+    'Timer (budsjett)',
+    'Status',
+    'Fredagstatus (%)',
+    'Lenke til leveranse',
+    'Kommentar'
+  ]];
+
+  tasks.forEach(function(t) {
+    rows.push([
+      t.section   || '',
+      t.undersec  || '',
+      t.sub       || '',
+      t.excelId   || '',
+      t.name      || '',
+      t.selected  ? 'Ja' : 'Nei',
+      t.eier      || '',
+      t.ansvar    || '',
+      t.frist     || '',
+      t.timer !== '' && t.timer !== undefined ? Number(t.timer) : '',
+      STATUS_NO[t.status] || t.status || 'Ikke startet',
+      t.fredagstatus || '',
+      t.link      || '',
+      t.comment   || ''
+    ]);
+  });
+
+  var wb = XLSX.utils.book_new();
+  var ws = XLSX.utils.aoa_to_sheet(rows);
+
+  // Column widths (approximate chars)
+  ws['!cols'] = [
+    {wch: 22},  // Seksjon
+    {wch: 14},  // Underkapittel
+    {wch: 28},  // Sub-gruppe
+    {wch: 14},  // Post-ID
+    {wch: 55},  // Navn
+    {wch: 8},   // Valgt
+    {wch: 18},  // Eier
+    {wch: 22},  // Ansvar
+    {wch: 12},  // Frist
+    {wch: 16},  // Timer
+    {wch: 14},  // Status
+    {wch: 16},  // Fredagstatus
+    {wch: 30},  // Lenke
+    {wch: 35}   // Kommentar
+  ];
+
+  // Freeze top row
+  ws['!freeze'] = {xSplit: 0, ySplit: 1};
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Bestillingsliste');
+
+  // File name with today's date
+  var today = new Date();
+  var dateStr = today.getFullYear() + '-'
+    + String(today.getMonth()+1).padStart(2,'0') + '-'
+    + String(today.getDate()).padStart(2,'0');
+  var projectName = (document.getElementById('project-name') || {}).textContent || 'Bestillingsliste';
+  var safeName = projectName.replace(/[^a-zA-Z0-9æøåÆØÅ\-_ ]/g,'').trim().slice(0,40);
+  var fileName = safeName + ' ' + dateStr + '.xlsx';
+
+  XLSX.writeFile(wb, fileName);
+  showToast('Eksportert: ' + fileName);
+}
