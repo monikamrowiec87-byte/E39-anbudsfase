@@ -832,12 +832,17 @@
   }
 
   /* Budget fields — timer sits in col 6, extras in col 7 (fredag) */
+  .sub-header { position: relative; }
+
   .undersec-budget-all {
+    position: absolute;
+    /* left = cb(32) + gap(8) + post(var) + gap(8) + ansvar(var) + gap(8) + frist(var) + gap(8) + left-border+padding(11+14) */
+    left: calc(32px + var(--col-post, 280px) + var(--col-ansvar, 120px) + var(--col-frist, 115px) + 72px);
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-left: auto;
-    flex-shrink: 0;
+    top: 50%;
+    transform: translateY(-50%);
   }
   .sub-name-wrap {
     display: flex;

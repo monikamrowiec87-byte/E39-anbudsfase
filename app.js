@@ -543,12 +543,12 @@ function _renderSubGroups(items, secName, hue, today, undersec) {
         +   ' value="'+(_bgt.revisjonsDato||'')+'"'
         +   ' data-bkey="'+_bkeyEsc+'" data-bfield="revisjonsDato"'
         +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
-        + '<button class="sub-add-btn"'
+        + '</span>'
+        + '<button class="sub-add-btn" style="margin-left:auto"'
         +   ' data-sec="'+secName.replace(/"/g,'&quot;')+'"'
         +   ' data-sub="'+sub.replace(/"/g,'&quot;')+'"'
         +   ' data-undersec="'+(undersec||'').replace(/"/g,'&quot;')+'"'
-        +   ' onclick="handleSubAdd(this)">+ Legg til post</button>'
-        + '</span>';
+        +   ' onclick="handleSubAdd(this)">+ Legg til post</button>';
       html += '</div>';
       
     }
