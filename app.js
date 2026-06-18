@@ -99,6 +99,9 @@ function loadSaved() {
     // Restore undersec open/closed state
     if (data.undersecOpen) Object.assign(undersecOpen, data.undersecOpen);
     if (data.undersecBudget) Object.assign(undersecBudget, data.undersecBudget);
+  } catch(e) {}
+  try { var _bl=localStorage.getItem('bl_budget'); if(_bl) Object.assign(undersecBudget, JSON.parse(_bl)); } catch(e) {}
+  try {
 
     // Restore section open/closed state (with migration of old names)
     if (data.sectionOpen) {
@@ -172,11 +175,6 @@ function loadSaved() {
         });
       }
     }
-  } catch(e) {}
-  // Load budget from its own isolated key
-  try {
-    var _bl = localStorage.getItem('bl_budget');
-    if (_bl) Object.assign(undersecBudget, JSON.parse(_bl));
   } catch(e) {}
 }
 
@@ -414,35 +412,9 @@ function render() {
       html += '<div class="task-rows">';
       if(isGen){
         var genItems = _filterTasks(tasks.filter(function(t){return t.section===secName;}), q, today);
-        var _genKey = secName+'||||';
-        var _genKeyEsc = _genKey.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-        var _genBgt = undersecBudget[_genKey] || {};
-        html += '<div class="sub-header" style="--sub-accent:'+secColor+'">'
-          + '<span></span>'  // col1 drag
-          + '<span></span>'  // col2 cb
-          + '<span class="sub-name-wrap"><span style="font-size:11px;color:var(--text2)">Generelle poster</span></span>'  // col3
-          + '<span></span><span></span>'  // col4+5
-          + '<span class="undersec-budget-all">'
-          +   '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Timer"'
-          +     ' value="'+(_genBgt.timer!=null&&_genBgt.timer!==''?_genBgt.timer:'')+'"'
-          +     ' data-bkey="'+_genKeyEsc+'" data-bfield="timer"'
-          +     ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
-          + '</span>'
-          + '<span class="undersec-budget-right">'
-          +   '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Rev.budsjett"'
-          +     ' value="'+(_genBgt.revidert!=null&&_genBgt.revidert!==''?_genBgt.revidert:'')+'"'
-          +     ' data-bkey="'+_genKeyEsc+'" data-bfield="revidert"'
-          +     ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
-          +   '<input class="undersec-budget-input undersec-budget-date budget-field" type="date"'
-          +     ' value="'+(_genBgt.revisjonsDato||'')+'"'
-          +     ' data-bkey="'+_genKeyEsc+'" data-bfield="revisjonsDato"'
-          +     ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
-          + '</span>'
-          + '</div>';
         html += _renderSubGroups(genItems, secName, hue, today, '');
-        html += '<button class="sub-add-btn" style="margin:4px 12px 6px;display:inline-block"'
-          +   ' data-sec="'+secName.replace(/"/g,'&quot;')+'" data-sub="" data-undersec=""'
-          +   ' onclick="handleSubAdd(this)">+ Legg til post</button>';
+        html += '<button class="sub-add-btn" style="margin:6px 12px;display:inline-block"'
+          +' onclick="addTask(\'0 Generell\',\'\',\'\')">+ Legg til post</button>';
       } else {
         var undersecs = [];
         tasks.filter(function(t){return t.section===secName;}).forEach(function(t){
@@ -470,22 +442,12 @@ function render() {
             var _ubkey = secName+'||'+usec+'||';
             var _ubkeyEsc = _ubkey.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
             var _ubgt = undersecBudget[_ubkey] || {};
-            html += '<span class="undersec-budget-inline">'
-              + '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Timer"'
+            html += '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Timer"'
               +   ' value="'+(_ubgt.timer!=null&&_ubgt.timer!==''?_ubgt.timer:'')+'"'
               +   ' data-bkey="'+_ubkeyEsc+'" data-bfield="timer"'
-              +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
-              + '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Rev.budsjett"'
-              +   ' value="'+(_ubgt.revidert!=null&&_ubgt.revidert!==''?_ubgt.revidert:'')+'"'
-              +   ' data-bkey="'+_ubkeyEsc+'" data-bfield="revidert"'
-              +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
-              + '<input class="undersec-budget-input undersec-budget-date budget-field" type="date"'
-              +   ' value="'+(_ubgt.revisjonsDato||'')+'"'
-              +   ' data-bkey="'+_ubkeyEsc+'" data-bfield="revisjonsDato"'
-              +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
-              + '</span>';
+              +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />';
             html += '<button class="undersec-del-btn"'
-              +' onclick="deleteUndersec('+_jsAttr(secName)+','+_jsAttr(usec)+')\"'
+              +' onclick="deleteUndersec('+_jsAttr(secName)+','+_jsAttr(usec)+')"'
               +' title="Slett underkapittel">\u00d7</button>';
             html += '</div>';
             if(uOpen) html += '<div>'+_renderSubGroups(uVis, secName, hue, today, usec)+'</div>';
@@ -537,50 +499,31 @@ function _renderSubGroups(items, secName, hue, today, undersec) {
       var sc2='hsl('+hue+',45%,38%)';
       var allS=si.length>0&&si.every(function(t){return t.selected;});
       html += '<div class="sub-header" style="--sub-accent:'+sc2+'">';
-      html += '<span></span>'; // col1: drag
       html += '<input type="checkbox" class="sub-cb"'+(allS?' checked':'')
         +' data-sec="'+secName.replace(/"/g,'&quot;')+'"'
         +' data-sub="'+sub.replace(/"/g,'&quot;')+'"'
-        +' onchange="handleSubCb(this)" title="Velg alle">';  // col2: cb
-      html += '<span class="sub-name-wrap">'  // col3: post (grid-column:3 in CSS)
-        +'<span class="sub-name"'
+        +' onchange="handleSubCb(this)" title="Velg alle">';
+      html += '<span class="sub-name"'
         +' data-sec="'+secName.replace(/"/g,'&quot;')+'"'
         +' data-sub="'+sub.replace(/"/g,'&quot;')+'"'
-        +' ondblclick="startEditSubName(this)">'+esc(sub)+'</span>'
-        +'<span class="sub-edit-hint" ondblclick="startEditSubName(this.previousElementSibling)">&#9998;</span>'
-        +'<span class="sub-count">'+si.length+'</span>'
-        +'</span>';
-      // col4+5 (ansvar+frist): empty
-      html += '<span></span><span></span>';
+        +' ondblclick="startEditSubName(this)">'+esc(sub)+'</span>';
+      html += '<span class="sub-edit-hint" ondblclick="startEditSubName(this.previousElementSibling)">&#9998;</span>';
+      html += '<span class="sub-count">'+si.length+'</span>';
       var _bkey = secName+'||'+(undersec||'')+'||'+sub;
       var _bkeyEsc = _bkey.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
       var _bgt = undersecBudget[_bkey] || {};
-      // col6: timer
-      html += '<span class="undersec-budget-all">'
+      html += '<span class="undersec-budget-group">'
         + '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Timer"'
         +   ' value="'+(_bgt.timer!=null&&_bgt.timer!==''?_bgt.timer:'')+'"'
         +   ' data-bkey="'+_bkeyEsc+'" data-bfield="timer"'
         +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
         + '</span>';
-      // col7-9: rev.budsjett + dato
-      html += '<span class="undersec-budget-right">'
-        + '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Rev.budsjett"'
-        +   ' value="'+(_bgt.revidert!=null&&_bgt.revidert!==''?_bgt.revidert:'')+'"'
-        +   ' data-bkey="'+_bkeyEsc+'" data-bfield="revidert"'
-        +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
-        + '<input class="undersec-budget-input undersec-budget-date budget-field" type="date"'
-        +   ' value="'+(_bgt.revisjonsDato||'')+'"'
-        +   ' data-bkey="'+_bkeyEsc+'" data-bfield="revisjonsDato"'
-        +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
-        + '</span>';
-      // col10: legg til post
-      html += '<span class="sub-add-wrap"><button class="sub-add-btn"'
+      html += '<button class="sub-add-btn"'
         +' data-sec="'+secName.replace(/"/g,'&quot;')+'"'
         +' data-sub="'+sub.replace(/"/g,'&quot;')+'"'
         +' data-undersec="'+(undersec||'').replace(/"/g,'&quot;')+'"'
-        +' onclick="handleSubAdd(this)">+ Legg til post</button></span>';
+        +' onclick="handleSubAdd(this)">+ Legg til post</button>';
       html += '</div>';
-      
     }
     si.forEach(function(t){
       var ov=t.frist&&t.frist<today&&t.status!=='Ferdig';
@@ -648,15 +591,12 @@ function updateStats() {
   var sel=tasks.filter(t=>t.selected), total=tasks.length;
   var ferdig=tasks.filter(t=>t.status==='Ferdig').length;
   var totalTimer=sel.reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0);
-  // Add sub-group budget timers
-  var budgetTimer=Object.keys(undersecBudget).reduce(function(s,k){ return s+(parseFloat(undersecBudget[k].timer)||0); },0);
-  var totalTimerAll = totalTimer + budgetTimer;
   var pct=total>0?Math.round(ferdig/total*100):0;
   var today=getToday();
   var overdue=tasks.filter(t=>t.selected&&t.frist&&t.frist<today&&t.status!=='Ferdig').length;
   document.getElementById('stats-bar').innerHTML =
     '<div class="stat"><div class="stat-label">Valgte poster</div><div class="stat-value">'+sel.length+'</div><div class="stat-sub">av '+total+' totalt</div></div>'
-    +'<div class="stat"><div class="stat-label">Budsjetterte timer</div><div class="stat-value">'+(totalTimerAll>0?totalTimerAll:'\u2013')+'</div><div class="stat-sub">totalt (poster + grupper)</div></div>'
+    +'<div class="stat"><div class="stat-label">Budsjetterte timer</div><div class="stat-value">'+(totalTimer>0?totalTimer:'\u2013')+'</div><div class="stat-sub">for valgte poster</div></div>'
     +'<div class="stat"><div class="stat-label">Fremdrift</div><div class="stat-value">'+pct+'%</div><div class="progress-wrap"><div class="progress-fill" style="width:'+pct+'%"></div></div></div>'
     +'<div class="stat"><div class="stat-label">Utl\u00f8pt frist</div><div class="stat-value" style="'+(overdue>0?'color:var(--red)':'')+'">'+overdue+'</div><div class="stat-sub">poster</div></div>';
   var selTimer=sel.reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0);
@@ -735,8 +675,7 @@ function renderDashboard() {
   var today=getToday(),total=tasks.length,ferdig=tasks.filter(t=>t.status==='Ferdig').length;
   var pct=total>0?Math.round(ferdig/total*100):0;
   var overdue=tasks.filter(t=>t.frist&&t.frist<today&&t.status!=='Ferdig');
-  var totalTimer=tasks.reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0)
-    + Object.keys(undersecBudget).reduce(function(s,k){ return s+(parseFloat(undersecBudget[k].timer)||0); },0);
+  var totalTimer=tasks.reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0);
   var ferdigTimer=tasks.filter(t=>t.status==='Ferdig').reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0);
   var timerPct=totalTimer>0?Math.round(ferdigTimer/totalTimer*100):0;
   var statusData=[{label:'Ferdig',val:ferdig,color:'#1D9E75'},{label:'P\u00e5g\u00e5r',val:tasks.filter(t=>t.status==='P\u00e5g\u00e5r').length,color:'#EF9F27'},{label:'Til review',val:tasks.filter(t=>t.status==='Til review').length,color:'#378ADD'},{label:'Blokkert',val:tasks.filter(t=>t.status==='Blokkert').length,color:'#E24B4A'},{label:'Ikke startet',val:tasks.filter(t=>t.status==='Ikke startet').length,color:'#B4B2A9'}];
@@ -963,7 +902,6 @@ function toggleUndersec(sec, usec) {
 function setUndersecBudget(key, field, value) {
   if (!undersecBudget[key]) undersecBudget[key] = {};
   undersecBudget[key][field] = value;
-  // Use separate key so nothing else can overwrite it
   try { localStorage.setItem('bl_budget', JSON.stringify(undersecBudget)); } catch(e) {}
 }
 
@@ -993,7 +931,7 @@ function ukModalConfirm() {
   var name = (document.getElementById('ukmodal-input').value || '').trim();
   var sec = _pendingUkSec;
   if (!name || !sec) { ukModalCancel(); return; }
-  var addedAny = false;
+  // Create complete new block
   Object.entries(SECTIONS_DATA[sec]).forEach(function(e) {
     var sub=e[0], items=e[1];
     items.forEach(function(item) {
@@ -1002,17 +940,8 @@ function ukModalConfirm() {
         section:sec, undersec:name, sub:sub, name:item.name,
         selected:false, frist:'', timer:'', status:'Ikke startet', link:'', comment:''
       });
-      addedAny = true;
     });
   });
-  // If section has no template tasks (e.g. 3 YM), add one empty placeholder
-  if (!addedAny) {
-    tasks.push({
-      id:idCounter++, excelId:'',
-      section:sec, undersec:name, sub:'', name:'Ny oppgave',
-      selected:false, frist:'', timer:'', status:'Ikke startet', link:'', comment:''
-    });
-  }
   if(!undersecOpen[sec]) undersecOpen[sec] = {};
   undersecOpen[sec][name] = true;
   ukModalCancel();
@@ -1640,11 +1569,9 @@ async function spPush() {
     var ts = Date.now();
     var payload = {
       tasks: tasks, sectionOpen: sectionOpen, undersecOpen: undersecOpen,
-      undersecBudget: undersecBudget,
       SECTIONS_DATA: SECTIONS_DATA, vacations: vacations, vacIdCounter: vacIdCounter,
       projectLinks: projectLinks, linkIdCounter: linkIdCounter,
       modelLinks: modelLinks, modelIdCounter: modelIdCounter,
-      risikoEntries: risikoEntries, muligheterEntries: muligheterEntries,
       ts: ts
     };
     var r = await fetch(spUrl(), {
@@ -1734,7 +1661,6 @@ function spMerge(remote) {
   // Restore other state
   if (remote.sectionOpen)  Object.assign(sectionOpen, remote.sectionOpen);
   if (remote.undersecOpen) Object.assign(undersecOpen, remote.undersecOpen);
-  if (remote.undersecBudget) Object.assign(undersecBudget, remote.undersecBudget);
   if (remote.vacations) {
     vacations = remote.vacations;
     vacIdCounter = remote.vacIdCounter || (Math.max.apply(null, [0].concat(vacations.map(function(v){return v.id||0;}))) + 1);
@@ -1756,11 +1682,9 @@ function spMerge(remote) {
   try {
     localStorage.setItem('bestillingsliste_v4', JSON.stringify({
       tasks: tasks, sectionOpen: sectionOpen, undersecOpen: undersecOpen,
-      undersecBudget: undersecBudget,
       SECTIONS_DATA: SECTIONS_DATA, vacations: vacations, vacIdCounter: vacIdCounter,
       projectLinks: projectLinks, linkIdCounter: linkIdCounter,
-      modelLinks: modelLinks, modelIdCounter: modelIdCounter,
-      risikoEntries: risikoEntries, muligheterEntries: muligheterEntries
+      modelLinks: modelLinks, modelIdCounter: modelIdCounter
     }));
   } catch(e) {}
   render();
@@ -1801,15 +1725,6 @@ window.addEventListener('DOMContentLoaded', function () {
   renderModelLinks();
   spLoadConfig();
 
-  // Delegated listener for hidden-col restore pills
-  document.body.addEventListener('click', function(e) {
-    var pill = e.target.closest('.hcb-pill');
-    if (!pill) return;
-    var col = pill.getAttribute('data-col');
-    if (col) toggleColVisibility(col);
-  });
-
-  // Delegated listener for budget fields (avoids inline handler quoting issues)
   document.body.addEventListener('change', function(e) {
     var el = e.target;
     if (!el.classList.contains('budget-field')) return;
@@ -2071,67 +1986,6 @@ var COL_DEFAULTS = {
 };
 
 var colWidths = {};
-var HIDE_STORAGE_KEY = 'bestillingsliste_hidden_cols_v1';
-var hiddenCols = {};
-
-var COL_LABELS = {
-  ansvar: 'Ansvar / grensesnitt',
-  frist:  'Frist',
-  timer:  'Timer',
-  status: 'Status',
-  fredag: 'Fredagstatus',
-  lenke:  'Lenke',
-  kommentar: 'Kommentar'
-};
-
-function loadHiddenCols() {
-  try {
-    var s = localStorage.getItem(HIDE_STORAGE_KEY);
-    hiddenCols = s ? JSON.parse(s) : {};
-  } catch(e) { hiddenCols = {}; }
-}
-
-function saveHiddenCols() {
-  try { localStorage.setItem(HIDE_STORAGE_KEY, JSON.stringify(hiddenCols)); } catch(e) {}
-}
-
-function applyHiddenCols() {
-  var root = document.documentElement;
-  Object.keys(COL_LABELS).forEach(function(col) {
-    var hidden = !!hiddenCols[col];
-    root.style.setProperty('--col-' + col + '-hidden', hidden ? '1' : '0');
-    var ch = document.querySelector('.ch[data-col="' + col + '"]');
-    if (ch) {
-      ch.classList.toggle('col-hidden', hidden);
-      ch.title = hidden ? 'Klikk for å vise' : 'Klikk for å skjule';
-    }
-    if (hidden) {
-      root.style.setProperty('--col-' + col, '0px');
-    } else {
-      root.style.setProperty('--col-' + col, (colWidths[col] || COL_DEFAULTS[col].val) + 'px');
-    }
-  });
-  // Render restore-bar with pills for hidden columns
-  var bar = document.getElementById('hidden-cols-bar');
-  if (!bar) return;
-  var hidden = Object.keys(COL_LABELS).filter(function(c){ return !!hiddenCols[c]; });
-  if (hidden.length === 0) {
-    bar.style.display = 'none';
-    return;
-  }
-  bar.style.display = 'flex';
-  bar.innerHTML = '<span class="hcb-label">Skjulte kolonner:</span>'
-    + hidden.map(function(col) {
-        return '<button class="hcb-pill" data-col="' + col + '">+ ' + COL_LABELS[col] + '</button>';
-      }).join('');
-}
-
-function toggleColVisibility(col) {
-  if (!COL_LABELS[col]) return;
-  hiddenCols[col] = !hiddenCols[col];
-  saveHiddenCols();
-  applyHiddenCols();
-}
 
 function loadColWidths() {
   try {
@@ -2152,17 +2006,13 @@ function applyColWidths() {
   var root = document.documentElement;
   var names = { cb:'cb', post:'post', ansvar:'ansvar', frist:'frist', timer:'timer', status:'status', fredag:'fredag', lenke:'lenke', kommentar:'kommentar' };
   Object.keys(names).forEach(function(k) {
-    if (!hiddenCols[k]) {
-      root.style.setProperty('--col-' + k, colWidths[k] + 'px');
-    }
+    root.style.setProperty('--col-' + k, colWidths[k] + 'px');
   });
 }
 
 function initColResize() {
   loadColWidths();
-  loadHiddenCols();
   applyColWidths();
-  applyHiddenCols();
 
   document.querySelectorAll('.ch-resize').forEach(function(handle) {
     handle.addEventListener('mousedown', function(e) {
@@ -2194,16 +2044,6 @@ function initColResize() {
     });
   });
 }
-
-// Click on column header (not resize handle) to toggle visibility
-document.addEventListener('click', function(e) {
-  var ch = e.target.closest('.ch');
-  if (!ch || e.target.classList.contains('ch-resize')) return;
-  var col = ch.getAttribute('data-col');
-  if (col && COL_LABELS[col]) {
-    toggleColVisibility(col);
-  }
-});
 
 // Double-click handle to reset that column to default
 document.addEventListener('dblclick', function(e) {
