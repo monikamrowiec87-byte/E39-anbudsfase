@@ -291,9 +291,9 @@
 .undersec-budget-group {
   display: flex;
   align-items: center;
-  gap: 5px;
-  margin-left: 16px;
-  margin-right: 12px;
+  gap: 3px;
+  margin-left: 12px;
+  margin-right: 8px;
   flex: 1;
   min-width: 0;
 }
@@ -304,14 +304,16 @@
   white-space: nowrap;
   user-select: none;
   flex-shrink: 0;
+  margin-left: 6px;
 }
+.undersec-budget-label:first-child { margin-left: 0; }
 .undersec-budget-input {
-  width: 80px;
-  padding: 3px 7px;
-  font-size: 12px;
+  width: 58px;
+  padding: 2px 5px;
+  font-size: 11px;
   font-family: inherit;
   border: 1px solid var(--border2);
-  border-radius: 5px;
+  border-radius: 4px;
   background: var(--bg, #fff);
   color: var(--text);
   text-align: right;
@@ -326,7 +328,7 @@
   box-shadow: 0 0 0 2px rgba(74,144,217,0.15);
 }
 .undersec-budget-date {
-  width: 130px;
+  width: 110px;
   text-align: left;
 }
 </style>
