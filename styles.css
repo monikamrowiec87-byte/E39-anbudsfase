@@ -1321,3 +1321,28 @@
 
   /* Toast */
   #toast { background: #1c1800 !important; color: #dcb414 !important; border: 1px solid rgba(200,160,0,0.4) !important; }
+
+  /* ── Skjulbare kolonner ─────────────────────────────────── */
+  /* All grid cells must clip when column width goes to 0 */
+  .col-headers > *, .task-row > *, .sub-header > * {
+    overflow: hidden;
+    min-width: 0;
+  }
+  /* Clickable headers (not drag/cb/post) */
+  .ch[data-col="ansvar"], .ch[data-col="frist"], .ch[data-col="timer"],
+  .ch[data-col="status"], .ch[data-col="fredag"], .ch[data-col="lenke"],
+  .ch[data-col="kommentar"] {
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.15s;
+  }
+  .ch[data-col="ansvar"]:hover, .ch[data-col="frist"]:hover, .ch[data-col="timer"]:hover,
+  .ch[data-col="status"]:hover, .ch[data-col="fredag"]:hover, .ch[data-col="lenke"]:hover,
+  .ch[data-col="kommentar"]:hover { opacity: 0.65; }
+  /* Hidden column header appearance */
+  .ch.col-hidden {
+    opacity: 0.3;
+    font-style: italic;
+  }
+  .ch.col-hidden::after { content: ' (+)'; font-size: 9px; }
+

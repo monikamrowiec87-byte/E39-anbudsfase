@@ -173,6 +173,11 @@ function loadSaved() {
       }
     }
   } catch(e) {}
+  // Load budget from its own isolated key
+  try {
+    var _bl = localStorage.getItem('bl_budget');
+    if (_bl) Object.assign(undersecBudget, JSON.parse(_bl));
+  } catch(e) {}
 }
 
 function saveData() {
@@ -903,7 +908,8 @@ function toggleUndersec(sec, usec) {
 function setUndersecBudget(key, field, value) {
   if (!undersecBudget[key]) undersecBudget[key] = {};
   undersecBudget[key][field] = value;
-  try { localStorage.setItem('bestillingsliste_v4', JSON.stringify({tasks, sectionOpen, undersecOpen, undersecBudget, SECTIONS_DATA, vacations, vacIdCounter, projectLinks, linkIdCounter, modelLinks, modelIdCounter, risikoEntries, muligheterEntries})); } catch(e) {}
+  // Use separate key so nothing else can overwrite it
+  try { localStorage.setItem('bl_budget', JSON.stringify(undersecBudget)); } catch(e) {}
 }
 
 var _pendingUkSec = null;
@@ -1993,6 +1999,57 @@ var COL_DEFAULTS = {
 };
 
 var colWidths = {};
+var HIDE_STORAGE_KEY = 'bestillingsliste_hidden_cols_v1';
+var hiddenCols = {};
+
+var COL_LABELS = {
+  ansvar: 'Ansvar / grensesnitt',
+  frist:  'Frist',
+  timer:  'Timer',
+  status: 'Status',
+  fredag: 'Fredagstatus',
+  lenke:  'Lenke',
+  kommentar: 'Kommentar'
+};
+
+function loadHiddenCols() {
+  try {
+    var s = localStorage.getItem(HIDE_STORAGE_KEY);
+    hiddenCols = s ? JSON.parse(s) : {};
+  } catch(e) { hiddenCols = {}; }
+}
+
+function saveHiddenCols() {
+  try { localStorage.setItem(HIDE_STORAGE_KEY, JSON.stringify(hiddenCols)); } catch(e) {}
+}
+
+function applyHiddenCols() {
+  var root = document.documentElement;
+  Object.keys(COL_LABELS).forEach(function(col) {
+    var hidden = !!hiddenCols[col];
+    // Set width to 0 or restore saved width
+    root.style.setProperty('--col-' + col + '-hidden', hidden ? '1' : '0');
+    // Toggle header span
+    var ch = document.querySelector('.ch[data-col="' + col + '"]');
+    if (ch) {
+      ch.classList.toggle('col-hidden', hidden);
+      ch.title = hidden ? 'Klikk for å vise' : 'Klikk for å skjule';
+    }
+    // Apply width override
+    if (hidden) {
+      root.style.setProperty('--col-' + col, '0px');
+    } else {
+      root.style.setProperty('--col-' + col, (colWidths[col] || COL_DEFAULTS[col].val) + 'px');
+    }
+  });
+}
+
+function toggleColVisibility(col) {
+  if (!COL_LABELS[col]) return;
+  hiddenCols[col] = !hiddenCols[col];
+  saveHiddenCols();
+  applyHiddenCols();
+}
 
 function loadColWidths() {
   try {
@@ -2013,13 +2070,17 @@ function applyColWidths() {
   var root = document.documentElement;
   var names = { cb:'cb', post:'post', ansvar:'ansvar', frist:'frist', timer:'timer', status:'status', fredag:'fredag', lenke:'lenke', kommentar:'kommentar' };
   Object.keys(names).forEach(function(k) {
-    root.style.setProperty('--col-' + k, colWidths[k] + 'px');
+    if (!hiddenCols[k]) {
+      root.style.setProperty('--col-' + k, colWidths[k] + 'px');
+    }
   });
 }
 
 function initColResize() {
   loadColWidths();
+  loadHiddenCols();
   applyColWidths();
+  applyHiddenCols();
 
   document.querySelectorAll('.ch-resize').forEach(function(handle) {
     handle.addEventListener('mousedown', function(e) {
@@ -2051,6 +2112,16 @@ function initColResize() {
     });
   });
 }
+
+// Click on column header (not resize handle) to toggle visibility
+document.addEventListener('click', function(e) {
+  var ch = e.target.closest('.ch');
+  if (!ch || e.target.classList.contains('ch-resize')) return;
+  var col = ch.getAttribute('data-col');
+  if (col && COL_LABELS[col]) {
+    toggleColVisibility(col);
+  }
+});
 
 // Double-click handle to reset that column to default
 document.addEventListener('dblclick', function(e) {
