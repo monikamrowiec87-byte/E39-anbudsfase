@@ -597,12 +597,15 @@ function updateStats() {
   var sel=tasks.filter(t=>t.selected), total=tasks.length;
   var ferdig=tasks.filter(t=>t.status==='Ferdig').length;
   var totalTimer=sel.reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0);
+  // Add sub-group budget timers
+  var budgetTimer=Object.keys(undersecBudget).reduce(function(s,k){ return s+(parseFloat(undersecBudget[k].timer)||0); },0);
+  var totalTimerAll = totalTimer + budgetTimer;
   var pct=total>0?Math.round(ferdig/total*100):0;
   var today=getToday();
   var overdue=tasks.filter(t=>t.selected&&t.frist&&t.frist<today&&t.status!=='Ferdig').length;
   document.getElementById('stats-bar').innerHTML =
     '<div class="stat"><div class="stat-label">Valgte poster</div><div class="stat-value">'+sel.length+'</div><div class="stat-sub">av '+total+' totalt</div></div>'
-    +'<div class="stat"><div class="stat-label">Budsjetterte timer</div><div class="stat-value">'+(totalTimer>0?totalTimer:'\u2013')+'</div><div class="stat-sub">for valgte poster</div></div>'
+    +'<div class="stat"><div class="stat-label">Budsjetterte timer</div><div class="stat-value">'+(totalTimerAll>0?totalTimerAll:'\u2013')+'</div><div class="stat-sub">totalt (poster + grupper)</div></div>'
     +'<div class="stat"><div class="stat-label">Fremdrift</div><div class="stat-value">'+pct+'%</div><div class="progress-wrap"><div class="progress-fill" style="width:'+pct+'%"></div></div></div>'
     +'<div class="stat"><div class="stat-label">Utl\u00f8pt frist</div><div class="stat-value" style="'+(overdue>0?'color:var(--red)':'')+'">'+overdue+'</div><div class="stat-sub">poster</div></div>';
   var selTimer=sel.reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0);
@@ -681,7 +684,8 @@ function renderDashboard() {
   var today=getToday(),total=tasks.length,ferdig=tasks.filter(t=>t.status==='Ferdig').length;
   var pct=total>0?Math.round(ferdig/total*100):0;
   var overdue=tasks.filter(t=>t.frist&&t.frist<today&&t.status!=='Ferdig');
-  var totalTimer=tasks.reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0);
+  var totalTimer=tasks.reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0)
+    + Object.keys(undersecBudget).reduce(function(s,k){ return s+(parseFloat(undersecBudget[k].timer)||0); },0);
   var ferdigTimer=tasks.filter(t=>t.status==='Ferdig').reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0);
   var timerPct=totalTimer>0?Math.round(ferdigTimer/totalTimer*100):0;
   var statusData=[{label:'Ferdig',val:ferdig,color:'#1D9E75'},{label:'P\u00e5g\u00e5r',val:tasks.filter(t=>t.status==='P\u00e5g\u00e5r').length,color:'#EF9F27'},{label:'Til review',val:tasks.filter(t=>t.status==='Til review').length,color:'#378ADD'},{label:'Blokkert',val:tasks.filter(t=>t.status==='Blokkert').length,color:'#E24B4A'},{label:'Ikke startet',val:tasks.filter(t=>t.status==='Ikke startet').length,color:'#B4B2A9'}];
