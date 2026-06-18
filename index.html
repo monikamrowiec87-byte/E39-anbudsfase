@@ -287,14 +287,14 @@
 .risiko-add-row { margin:8px 12px 16px; font-size:12px; font-weight:600; padding:6px 14px; background:var(--surface); border:0.5px dashed var(--border2); border-radius:var(--radius-sm); cursor:pointer; color:var(--text2); }
 .risiko-add-row:hover { background:var(--hover); color:var(--text); }
 
-/* ── Underkapittel budsjettfelter ─────────────────────────── */
+/* ── Sub-gruppe budsjettfelter ─────────────────────────────── */
 .undersec-budget-group {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-left: 24px;   /* gap after name */
+  gap: 5px;
+  margin-left: 16px;
   margin-right: 12px;
-  flex: 1;             /* fill the empty center space */
+  flex: 1;
   min-width: 0;
 }
 .undersec-budget-label {
@@ -307,7 +307,7 @@
 }
 .undersec-budget-input {
   width: 80px;
-  padding: 4px 8px;
+  padding: 3px 7px;
   font-size: 12px;
   font-family: inherit;
   border: 1px solid var(--border2);
@@ -319,7 +319,7 @@
   transition: border-color 0.15s, box-shadow 0.15s;
   flex-shrink: 0;
 }
-.undersec-budget-input::placeholder { color: var(--text2); opacity: 0.5; }
+.undersec-budget-input::placeholder { color: var(--text2); opacity: 0.45; }
 .undersec-budget-input:hover { border-color: var(--border, #bbb); }
 .undersec-budget-input:focus {
   border-color: var(--accent, #4a90d9);

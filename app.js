@@ -434,27 +434,6 @@ function render() {
             html += '<span class="undersec-edit-hint"'
               +' onclick="startEditUndersecName(this.previousElementSibling,'+_jsAttr(secName)+','+_jsAttr(usec)+')"'
               +' title="Rediger navn">&#9998;</span>';
-            var bgt = (undersecBudget[secName] && undersecBudget[secName][usec]) || {};
-            html += '<span class="undersec-budget-group">'
-              + '<label class="undersec-budget-label">Timer</label>'
-              + '<input class="undersec-budget-input" type="number" min="0" placeholder="–"'
-              +   ' value="'+(bgt.timer!=null?bgt.timer:'')+'"'
-              +   ' title="Budsjetterte timer"'
-              +   ' onchange="setUndersecBudget('+_jsAttr(secName)+','+_jsAttr(usec)+',\'timer\',this.value)"'
-              +   ' onclick="event.stopPropagation()" />'
-              + '<label class="undersec-budget-label">Revidert budsjett</label>'
-              + '<input class="undersec-budget-input" type="number" min="0" placeholder="–"'
-              +   ' value="'+(bgt.revidert!=null?bgt.revidert:'')+'"'
-              +   ' title="Revidert budsjett"'
-              +   ' onchange="setUndersecBudget('+_jsAttr(secName)+','+_jsAttr(usec)+',\'revidert\',this.value)"'
-              +   ' onclick="event.stopPropagation()" />'
-              + '<label class="undersec-budget-label">Revisjonsdato</label>'
-              + '<input class="undersec-budget-input undersec-budget-date" type="date"'
-              +   ' value="'+(bgt.revisjonsDato||'')+'"'
-              +   ' title="Dato for revisjon"'
-              +   ' onchange="setUndersecBudget('+_jsAttr(secName)+','+_jsAttr(usec)+',\'revisjonsDato\',this.value)"'
-              +   ' onclick="event.stopPropagation()" />'
-              + '</span>';
             if(uSel>0) html += '<span class="undersec-badge">'+uSel+' valgt</span>';
             html += '<span class="undersec-badge">'+uVis.length+'/'+uAll.length+'</span>';
             html += '<button class="undersec-del-btn"'
@@ -520,6 +499,28 @@ function _renderSubGroups(items, secName, hue, today, undersec) {
         +' ondblclick="startEditSubName(this)">'+esc(sub)+'</span>';
       html += '<span class="sub-edit-hint" ondblclick="startEditSubName(this.previousElementSibling)">&#9998;</span>';
       html += '<span class="sub-count">'+si.length+'</span>';
+      var _bkey = secName+'||'+(undersec||'')+'||'+sub;
+      var _bgt = (undersecBudget[_bkey]) || {};
+      html += '<span class="undersec-budget-group">'
+        + '<label class="undersec-budget-label">Timer</label>'
+        + '<input class="undersec-budget-input" type="number" min="0" placeholder="–"'
+        +   ' value="'+(_bgt.timer!=null&&_bgt.timer!==''?_bgt.timer:'')+'"'
+        +   ' title="Budsjetterte timer"'
+        +   ' onchange="setUndersecBudget('+JSON.stringify(_bkey)+',\'\',\'timer\',this.value)"'
+        +   ' onclick="event.stopPropagation()" />'
+        + '<label class="undersec-budget-label">Revidert budsjett</label>'
+        + '<input class="undersec-budget-input" type="number" min="0" placeholder="–"'
+        +   ' value="'+(_bgt.revidert!=null&&_bgt.revidert!==''?_bgt.revidert:'')+'"'
+        +   ' title="Revidert budsjett"'
+        +   ' onchange="setUndersecBudget('+JSON.stringify(_bkey)+',\'\',\'revidert\',this.value)"'
+        +   ' onclick="event.stopPropagation()" />'
+        + '<label class="undersec-budget-label">Revisjonsdato</label>'
+        + '<input class="undersec-budget-input undersec-budget-date" type="date"'
+        +   ' value="'+(_bgt.revisjonsDato||'')+'"'
+        +   ' title="Dato for revisjon"'
+        +   ' onchange="setUndersecBudget('+JSON.stringify(_bkey)+',\'\',\'revisjonsDato\',this.value)"'
+        +   ' onclick="event.stopPropagation()" />'
+        + '</span>';
       html += '<button class="sub-add-btn"'
         +' data-sec="'+secName.replace(/"/g,'&quot;')+'"'
         +' data-sub="'+sub.replace(/"/g,'&quot;')+'"'
@@ -900,11 +901,10 @@ function toggleUndersec(sec, usec) {
   undersecOpen[sec][usec] = (undersecOpen[sec][usec] === false) ? true : false;
   render();
 }
-function setUndersecBudget(sec, usec, field, value) {
-  if (!undersecBudget[sec]) undersecBudget[sec] = {};
-  if (!undersecBudget[sec][usec]) undersecBudget[sec][usec] = {};
-  undersecBudget[sec][usec][field] = value;
-  // auto-save silently
+function setUndersecBudget(key, _unused, field, value) {
+  // key is "secName||undersec||sub"
+  if (!undersecBudget[key]) undersecBudget[key] = {};
+  undersecBudget[key][field] = value;
   try { localStorage.setItem('bestillingsliste_v4', JSON.stringify({tasks, sectionOpen, undersecOpen, undersecBudget, SECTIONS_DATA, vacations, vacIdCounter, projectLinks, linkIdCounter, modelLinks, modelIdCounter, risikoEntries, muligheterEntries})); } catch(e) {}
 }
 
