@@ -1737,6 +1737,14 @@ window.addEventListener('DOMContentLoaded', function () {
   renderModelLinks();
   spLoadConfig();
 
+  // Delegated listener for hidden-col restore pills
+  document.body.addEventListener('click', function(e) {
+    var pill = e.target.closest('.hcb-pill');
+    if (!pill) return;
+    var col = pill.getAttribute('data-col');
+    if (col) toggleColVisibility(col);
+  });
+
   // Delegated listener for budget fields (avoids inline handler quoting issues)
   document.body.addEventListener('change', function(e) {
     var el = e.target;
@@ -2027,21 +2035,31 @@ function applyHiddenCols() {
   var root = document.documentElement;
   Object.keys(COL_LABELS).forEach(function(col) {
     var hidden = !!hiddenCols[col];
-    // Set width to 0 or restore saved width
     root.style.setProperty('--col-' + col + '-hidden', hidden ? '1' : '0');
-    // Toggle header span
     var ch = document.querySelector('.ch[data-col="' + col + '"]');
     if (ch) {
       ch.classList.toggle('col-hidden', hidden);
       ch.title = hidden ? 'Klikk for å vise' : 'Klikk for å skjule';
     }
-    // Apply width override
     if (hidden) {
       root.style.setProperty('--col-' + col, '0px');
     } else {
       root.style.setProperty('--col-' + col, (colWidths[col] || COL_DEFAULTS[col].val) + 'px');
     }
   });
+  // Render restore-bar with pills for hidden columns
+  var bar = document.getElementById('hidden-cols-bar');
+  if (!bar) return;
+  var hidden = Object.keys(COL_LABELS).filter(function(c){ return !!hiddenCols[c]; });
+  if (hidden.length === 0) {
+    bar.style.display = 'none';
+    return;
+  }
+  bar.style.display = 'flex';
+  bar.innerHTML = '<span class="hcb-label">Skjulte kolonner:</span>'
+    + hidden.map(function(col) {
+        return '<button class="hcb-pill" data-col="' + col + '">+ ' + COL_LABELS[col] + '</button>';
+      }).join('');
 }
 
 function toggleColVisibility(col) {
