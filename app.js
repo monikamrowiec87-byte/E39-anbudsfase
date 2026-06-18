@@ -417,7 +417,7 @@ function render() {
         var _genKey = secName+'||||';
         var _genKeyEsc = _genKey.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
         var _genBgt = undersecBudget[_genKey] || {};
-        html += '<div class="sub-header" style="--sub-accent:'+sc+'">'
+        html += '<div class="sub-header" style="--sub-accent:'+secColor+'">'
           + '<span></span><span></span>'
           + '<span class="sub-name-wrap"><span style="font-size:11px;color:var(--text2)">Generelle poster</span></span>'
           + '<span></span><span></span>'
