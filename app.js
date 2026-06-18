@@ -15,7 +15,7 @@ const SECTIONS_DATA = {"0 Generell": {"": [{"id": "GEN-00-1", "name": "Pris for 
 
 let tasks = [];
 let undersecOpen = {};
-let undersecBudget = {}; // {secName: {usec: {timer, revidert, revisjonsDato}}}
+let undersecBudget = {}; // {key: {timer, revidert, revisjonsDato}}
 let vacations = [];
 let vacIdCounter = 1;
 let vacTimelineOffset = -7;
@@ -426,7 +426,7 @@ function render() {
             var lc = 'hsl('+hue+',45%,55%)';
             html += '<div class="undersec-block" style="--undersec-color:'+lc+'">';
             html += '<div class="undersec-header">';
-            html += '<span class="undersec-chevron '+(uOpen?'open':'')+'\"'
+            html += '<span class="undersec-chevron '+(uOpen?'open':'')+'"'
               +' onclick="toggleUndersec('+_jsAttr(secName)+','+_jsAttr(usec)+')">&#9654;</span>';
             html += '<span class="undersec-name"'
               +' ondblclick="startEditUndersecName(this,'+_jsAttr(secName)+','+_jsAttr(usec)+')"'
@@ -500,25 +500,25 @@ function _renderSubGroups(items, secName, hue, today, undersec) {
       html += '<span class="sub-edit-hint" ondblclick="startEditSubName(this.previousElementSibling)">&#9998;</span>';
       html += '<span class="sub-count">'+si.length+'</span>';
       var _bkey = secName+'||'+(undersec||'')+'||'+sub;
-      var _bgt = (undersecBudget[_bkey]) || {};
+      var _bgt = undersecBudget[_bkey] || {};
       html += '<span class="undersec-budget-group">'
         + '<label class="undersec-budget-label">Timer</label>'
         + '<input class="undersec-budget-input" type="number" min="0" placeholder="–"'
         +   ' value="'+(_bgt.timer!=null&&_bgt.timer!==''?_bgt.timer:'')+'"'
         +   ' title="Budsjetterte timer"'
-        +   ' onchange="setUndersecBudget('+JSON.stringify(_bkey)+',\'\',\'timer\',this.value)"'
+        +   ' onchange="setUndersecBudget('+JSON.stringify(_bkey)+',\'timer\',this.value)"'
         +   ' onclick="event.stopPropagation()" />'
         + '<label class="undersec-budget-label">Revidert budsjett</label>'
         + '<input class="undersec-budget-input" type="number" min="0" placeholder="–"'
         +   ' value="'+(_bgt.revidert!=null&&_bgt.revidert!==''?_bgt.revidert:'')+'"'
         +   ' title="Revidert budsjett"'
-        +   ' onchange="setUndersecBudget('+JSON.stringify(_bkey)+',\'\',\'revidert\',this.value)"'
+        +   ' onchange="setUndersecBudget('+JSON.stringify(_bkey)+',\'revidert\',this.value)"'
         +   ' onclick="event.stopPropagation()" />'
         + '<label class="undersec-budget-label">Revisjonsdato</label>'
         + '<input class="undersec-budget-input undersec-budget-date" type="date"'
         +   ' value="'+(_bgt.revisjonsDato||'')+'"'
         +   ' title="Dato for revisjon"'
-        +   ' onchange="setUndersecBudget('+JSON.stringify(_bkey)+',\'\',\'revisjonsDato\',this.value)"'
+        +   ' onchange="setUndersecBudget('+JSON.stringify(_bkey)+',\'revisjonsDato\',this.value)"'
         +   ' onclick="event.stopPropagation()" />'
         + '</span>';
       html += '<button class="sub-add-btn"'
@@ -901,8 +901,8 @@ function toggleUndersec(sec, usec) {
   undersecOpen[sec][usec] = (undersecOpen[sec][usec] === false) ? true : false;
   render();
 }
-function setUndersecBudget(key, _unused, field, value) {
-  // key is "secName||undersec||sub"
+
+function setUndersecBudget(key, field, value) {
   if (!undersecBudget[key]) undersecBudget[key] = {};
   undersecBudget[key][field] = value;
   try { localStorage.setItem('bestillingsliste_v4', JSON.stringify({tasks, sectionOpen, undersecOpen, undersecBudget, SECTIONS_DATA, vacations, vacIdCounter, projectLinks, linkIdCounter, modelLinks, modelIdCounter, risikoEntries, muligheterEntries})); } catch(e) {}
@@ -1427,7 +1427,7 @@ function vacRender() {
 }
 
 var autoSaveTimer;
-function scheduleAutoSave(){ clearTimeout(autoSaveTimer); autoSaveTimer=setTimeout(function(){ try{ localStorage.setItem('bestillingsliste_v4',JSON.stringify({tasks:tasks,sectionOpen:sectionOpen,undersecOpen:undersecOpen,SECTIONS_DATA:SECTIONS_DATA,vacations:vacations,vacIdCounter:vacIdCounter,projectLinks:projectLinks,linkIdCounter:linkIdCounter,modelLinks:modelLinks,modelIdCounter:modelIdCounter,risikoEntries:risikoEntries,muligheterEntries:muligheterEntries})); }catch(e){} },1200); }
+function scheduleAutoSave(){ clearTimeout(autoSaveTimer); autoSaveTimer=setTimeout(function(){ try{ localStorage.setItem('bestillingsliste_v4',JSON.stringify({tasks:tasks,sectionOpen:sectionOpen,undersecOpen:undersecOpen,undersecBudget:undersecBudget,SECTIONS_DATA:SECTIONS_DATA,vacations:vacations,vacIdCounter:vacIdCounter,projectLinks:projectLinks,linkIdCounter:linkIdCounter,modelLinks:modelLinks,modelIdCounter:modelIdCounter,risikoEntries:risikoEntries,muligheterEntries:muligheterEntries})); }catch(e){} },1200); }
 var _change=change;
 window.change=function(id,field,val){ _change(id,field,val); scheduleAutoSave(); };
 var _toggleSelect=toggleSelect;

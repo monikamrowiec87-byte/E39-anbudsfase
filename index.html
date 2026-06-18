@@ -331,6 +331,50 @@
   width: 110px;
   text-align: left;
 }
+
+/* ── Sub-gruppe budsjettfelter ─────────────────────────────── */
+.undersec-budget-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 12px;
+  margin-right: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.undersec-budget-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text2);
+  white-space: nowrap;
+  user-select: none;
+  flex-shrink: 0;
+  margin-left: 6px;
+}
+.undersec-budget-input {
+  width: 58px;
+  padding: 2px 5px;
+  font-size: 11px;
+  font-family: inherit;
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  background: var(--bg, #fff);
+  color: var(--text);
+  text-align: right;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  flex-shrink: 0;
+}
+.undersec-budget-input::placeholder { color: var(--text2); opacity: 0.45; }
+.undersec-budget-input:hover { border-color: var(--border, #bbb); }
+.undersec-budget-input:focus {
+  border-color: var(--accent, #4a90d9);
+  box-shadow: 0 0 0 2px rgba(74,144,217,0.15);
+}
+.undersec-budget-date {
+  width: 110px;
+  text-align: left;
+}
 </style>
 <script src="app.js"></script>
 
