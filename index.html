@@ -286,6 +286,44 @@
 .risiko-del-btn:hover { color:var(--red); background:var(--red-bg); }
 .risiko-add-row { margin:8px 12px 16px; font-size:12px; font-weight:600; padding:6px 14px; background:var(--surface); border:0.5px dashed var(--border2); border-radius:var(--radius-sm); cursor:pointer; color:var(--text2); }
 .risiko-add-row:hover { background:var(--hover); color:var(--text); }
+
+/* ── Underkapittel budsjettfelter ─────────────────────────── */
+.undersec-budget-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+.undersec-budget-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text2);
+  white-space: nowrap;
+  user-select: none;
+}
+.undersec-budget-input {
+  width: 72px;
+  padding: 3px 6px;
+  font-size: 12px;
+  font-family: inherit;
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: right;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.undersec-budget-input:focus {
+  border-color: var(--accent, #4a90d9);
+  box-shadow: 0 0 0 2px rgba(74,144,217,0.15);
+}
+.undersec-budget-date {
+  width: 116px;
+  text-align: left;
+}
 </style>
 <script src="app.js"></script>
 

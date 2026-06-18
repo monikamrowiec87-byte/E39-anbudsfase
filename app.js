@@ -15,6 +15,7 @@ const SECTIONS_DATA = {"0 Generell": {"": [{"id": "GEN-00-1", "name": "Pris for 
 
 let tasks = [];
 let undersecOpen = {};
+let undersecBudget = {}; // {secName: {usec: {timer, revidert, revisjonsDato}}}
 let vacations = [];
 let vacIdCounter = 1;
 let vacTimelineOffset = -7;
@@ -97,6 +98,7 @@ function loadSaved() {
 
     // Restore undersec open/closed state
     if (data.undersecOpen) Object.assign(undersecOpen, data.undersecOpen);
+    if (data.undersecBudget) Object.assign(undersecBudget, data.undersecBudget);
 
     // Restore section open/closed state (with migration of old names)
     if (data.sectionOpen) {
@@ -174,7 +176,7 @@ function loadSaved() {
 }
 
 function saveData() {
-  try { localStorage.setItem('bestillingsliste_v4', JSON.stringify({tasks, sectionOpen, undersecOpen, SECTIONS_DATA, vacations, vacIdCounter, projectLinks, linkIdCounter, modelLinks, modelIdCounter, risikoEntries, muligheterEntries})); showToast('Lagret'); }
+  try { localStorage.setItem('bestillingsliste_v4', JSON.stringify({tasks, sectionOpen, undersecOpen, undersecBudget, SECTIONS_DATA, vacations, vacIdCounter, projectLinks, linkIdCounter, modelLinks, modelIdCounter, risikoEntries, muligheterEntries})); showToast('Lagret'); }
   catch(e) { showToast('Kunne ikke lagre'); }
 }
 
@@ -424,7 +426,7 @@ function render() {
             var lc = 'hsl('+hue+',45%,55%)';
             html += '<div class="undersec-block" style="--undersec-color:'+lc+'">';
             html += '<div class="undersec-header">';
-            html += '<span class="undersec-chevron '+(uOpen?'open':'')+'"'
+            html += '<span class="undersec-chevron '+(uOpen?'open':'')+'\"'
               +' onclick="toggleUndersec('+_jsAttr(secName)+','+_jsAttr(usec)+')">&#9654;</span>';
             html += '<span class="undersec-name"'
               +' ondblclick="startEditUndersecName(this,'+_jsAttr(secName)+','+_jsAttr(usec)+')"'
@@ -434,6 +436,27 @@ function render() {
               +' title="Rediger navn">&#9998;</span>';
             if(uSel>0) html += '<span class="undersec-badge">'+uSel+' valgt</span>';
             html += '<span class="undersec-badge">'+uVis.length+'/'+uAll.length+'</span>';
+            var bgt = (undersecBudget[secName] && undersecBudget[secName][usec]) || {};
+            html += '<span class="undersec-budget-group">'
+              + '<label class="undersec-budget-label">Timer</label>'
+              + '<input class="undersec-budget-input" type="number" min="0" placeholder="–"'
+              +   ' value="'+(bgt.timer!=null?bgt.timer:'')+'"'
+              +   ' title="Budsjetterte timer"'
+              +   ' onchange="setUndersecBudget('+_jsAttr(secName)+','+_jsAttr(usec)+',\'timer\',this.value)"'
+              +   ' onclick="event.stopPropagation()" />'
+              + '<label class="undersec-budget-label">Revidert</label>'
+              + '<input class="undersec-budget-input" type="number" min="0" placeholder="–"'
+              +   ' value="'+(bgt.revidert!=null?bgt.revidert:'')+'"'
+              +   ' title="Revidert budsjett"'
+              +   ' onchange="setUndersecBudget('+_jsAttr(secName)+','+_jsAttr(usec)+',\'revidert\',this.value)"'
+              +   ' onclick="event.stopPropagation()" />'
+              + '<label class="undersec-budget-label">Rev.dato</label>'
+              + '<input class="undersec-budget-input undersec-budget-date" type="date"'
+              +   ' value="'+(bgt.revisjonsDato||'')+'"'
+              +   ' title="Dato for revisjon"'
+              +   ' onchange="setUndersecBudget('+_jsAttr(secName)+','+_jsAttr(usec)+',\'revisjonsDato\',this.value)"'
+              +   ' onclick="event.stopPropagation()" />'
+              + '</span>';
             html += '<button class="undersec-del-btn"'
               +' onclick="deleteUndersec('+_jsAttr(secName)+','+_jsAttr(usec)+')"'
               +' title="Slett underkapittel">\u00d7</button>';
@@ -876,6 +899,13 @@ function toggleUndersec(sec, usec) {
   if(!undersecOpen[sec]) undersecOpen[sec]={};
   undersecOpen[sec][usec] = (undersecOpen[sec][usec] === false) ? true : false;
   render();
+}
+function setUndersecBudget(sec, usec, field, value) {
+  if (!undersecBudget[sec]) undersecBudget[sec] = {};
+  if (!undersecBudget[sec][usec]) undersecBudget[sec][usec] = {};
+  undersecBudget[sec][usec][field] = value;
+  // auto-save silently
+  try { localStorage.setItem('bestillingsliste_v4', JSON.stringify({tasks, sectionOpen, undersecOpen, undersecBudget, SECTIONS_DATA, vacations, vacIdCounter, projectLinks, linkIdCounter, modelLinks, modelIdCounter, risikoEntries, muligheterEntries})); } catch(e) {}
 }
 
 var _pendingUkSec = null;
