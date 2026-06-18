@@ -434,8 +434,6 @@ function render() {
             html += '<span class="undersec-edit-hint"'
               +' onclick="startEditUndersecName(this.previousElementSibling,'+_jsAttr(secName)+','+_jsAttr(usec)+')"'
               +' title="Rediger navn">&#9998;</span>';
-            if(uSel>0) html += '<span class="undersec-badge">'+uSel+' valgt</span>';
-            html += '<span class="undersec-badge">'+uVis.length+'/'+uAll.length+'</span>';
             var bgt = (undersecBudget[secName] && undersecBudget[secName][usec]) || {};
             html += '<span class="undersec-budget-group">'
               + '<label class="undersec-budget-label">Timer</label>'
@@ -444,19 +442,21 @@ function render() {
               +   ' title="Budsjetterte timer"'
               +   ' onchange="setUndersecBudget('+_jsAttr(secName)+','+_jsAttr(usec)+',\'timer\',this.value)"'
               +   ' onclick="event.stopPropagation()" />'
-              + '<label class="undersec-budget-label">Revidert</label>'
+              + '<label class="undersec-budget-label">Revidert budsjett</label>'
               + '<input class="undersec-budget-input" type="number" min="0" placeholder="–"'
               +   ' value="'+(bgt.revidert!=null?bgt.revidert:'')+'"'
               +   ' title="Revidert budsjett"'
               +   ' onchange="setUndersecBudget('+_jsAttr(secName)+','+_jsAttr(usec)+',\'revidert\',this.value)"'
               +   ' onclick="event.stopPropagation()" />'
-              + '<label class="undersec-budget-label">Rev.dato</label>'
+              + '<label class="undersec-budget-label">Revisjonsdato</label>'
               + '<input class="undersec-budget-input undersec-budget-date" type="date"'
               +   ' value="'+(bgt.revisjonsDato||'')+'"'
               +   ' title="Dato for revisjon"'
               +   ' onchange="setUndersecBudget('+_jsAttr(secName)+','+_jsAttr(usec)+',\'revisjonsDato\',this.value)"'
               +   ' onclick="event.stopPropagation()" />'
               + '</span>';
+            if(uSel>0) html += '<span class="undersec-badge">'+uSel+' valgt</span>';
+            html += '<span class="undersec-badge">'+uVis.length+'/'+uAll.length+'</span>';
             html += '<button class="undersec-del-btn"'
               +' onclick="deleteUndersec('+_jsAttr(secName)+','+_jsAttr(usec)+')"'
               +' title="Slett underkapittel">\u00d7</button>';

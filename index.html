@@ -291,10 +291,11 @@
 .undersec-budget-group {
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-left: auto;
-  margin-right: 8px;
-  flex-shrink: 0;
+  gap: 6px;
+  margin-left: 24px;   /* gap after name */
+  margin-right: 12px;
+  flex: 1;             /* fill the empty center space */
+  min-width: 0;
 }
 .undersec-budget-label {
   font-size: 10px;
@@ -302,26 +303,30 @@
   color: var(--text2);
   white-space: nowrap;
   user-select: none;
+  flex-shrink: 0;
 }
 .undersec-budget-input {
-  width: 72px;
-  padding: 3px 6px;
+  width: 80px;
+  padding: 4px 8px;
   font-size: 12px;
   font-family: inherit;
   border: 1px solid var(--border2);
   border-radius: 5px;
-  background: var(--surface);
+  background: var(--bg, #fff);
   color: var(--text);
   text-align: right;
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  flex-shrink: 0;
 }
+.undersec-budget-input::placeholder { color: var(--text2); opacity: 0.5; }
+.undersec-budget-input:hover { border-color: var(--border, #bbb); }
 .undersec-budget-input:focus {
   border-color: var(--accent, #4a90d9);
   box-shadow: 0 0 0 2px rgba(74,144,217,0.15);
 }
 .undersec-budget-date {
-  width: 116px;
+  width: 130px;
   text-align: left;
 }
 </style>
