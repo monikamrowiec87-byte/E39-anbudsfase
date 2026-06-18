@@ -418,12 +418,17 @@ function render() {
         var _genKeyEsc = _genKey.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
         var _genBgt = undersecBudget[_genKey] || {};
         html += '<div class="sub-header" style="--sub-accent:'+secColor+'">'
-          + '<span class="sub-name-wrap"><span style="font-size:11px;color:var(--text2)">Generelle poster</span></span>'
+          + '<span></span>'  // col1 drag
+          + '<span></span>'  // col2 cb
+          + '<span class="sub-name-wrap"><span style="font-size:11px;color:var(--text2)">Generelle poster</span></span>'  // col3
+          + '<span></span><span></span>'  // col4+5
           + '<span class="undersec-budget-all">'
           +   '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Timer"'
           +     ' value="'+(_genBgt.timer!=null&&_genBgt.timer!==''?_genBgt.timer:'')+'"'
           +     ' data-bkey="'+_genKeyEsc+'" data-bfield="timer"'
           +     ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
+          + '</span>'
+          + '<span class="undersec-budget-right">'
           +   '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Rev.budsjett"'
           +     ' value="'+(_genBgt.revidert!=null&&_genBgt.revidert!==''?_genBgt.revidert:'')+'"'
           +     ' data-bkey="'+_genKeyEsc+'" data-bfield="revidert"'
@@ -432,12 +437,12 @@ function render() {
           +     ' value="'+(_genBgt.revisjonsDato||'')+'"'
           +     ' data-bkey="'+_genKeyEsc+'" data-bfield="revisjonsDato"'
           +     ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
-          +   '<button class="sub-add-btn"'
-          +     ' data-sec="0 Generell" data-sub="" data-undersec=""'
-          +     ' onclick="handleSubAdd(this)">+ Legg til post</button>'
           + '</span>'
           + '</div>';
         html += _renderSubGroups(genItems, secName, hue, today, '');
+        html += '<button class="sub-add-btn" style="margin:4px 12px 6px;display:inline-block"'
+          +   ' data-sec="'+secName.replace(/"/g,'&quot;')+'" data-sub="" data-undersec=""'
+          +   ' onclick="handleSubAdd(this)">+ Legg til post</button>';
       } else {
         var undersecs = [];
         tasks.filter(function(t){return t.section===secName;}).forEach(function(t){
@@ -515,11 +520,12 @@ function _renderSubGroups(items, secName, hue, today, undersec) {
       var sc2='hsl('+hue+',45%,38%)';
       var allS=si.length>0&&si.every(function(t){return t.selected;});
       html += '<div class="sub-header" style="--sub-accent:'+sc2+'">';
+      html += '<span></span>'; // col1: drag
       html += '<input type="checkbox" class="sub-cb"'+(allS?' checked':'')
         +' data-sec="'+secName.replace(/"/g,'&quot;')+'"'
         +' data-sub="'+sub.replace(/"/g,'&quot;')+'"'
-        +' onchange="handleSubCb(this)" title="Velg alle">';
-      html += '<span class="sub-name-wrap">'
+        +' onchange="handleSubCb(this)" title="Velg alle">';  // col2: cb
+      html += '<span class="sub-name-wrap">'  // col3: post (grid-column:3 in CSS)
         +'<span class="sub-name"'
         +' data-sec="'+secName.replace(/"/g,'&quot;')+'"'
         +' data-sub="'+sub.replace(/"/g,'&quot;')+'"'
@@ -527,14 +533,20 @@ function _renderSubGroups(items, secName, hue, today, undersec) {
         +'<span class="sub-edit-hint" ondblclick="startEditSubName(this.previousElementSibling)">&#9998;</span>'
         +'<span class="sub-count">'+si.length+'</span>'
         +'</span>';
+      // col4+5 (ansvar+frist): empty
+      html += '<span></span><span></span>';
       var _bkey = secName+'||'+(undersec||'')+'||'+sub;
       var _bkeyEsc = _bkey.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
       var _bgt = undersecBudget[_bkey] || {};
+      // col6: timer
       html += '<span class="undersec-budget-all">'
         + '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Timer"'
         +   ' value="'+(_bgt.timer!=null&&_bgt.timer!==''?_bgt.timer:'')+'"'
         +   ' data-bkey="'+_bkeyEsc+'" data-bfield="timer"'
         +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
+        + '</span>';
+      // col7-9: rev.budsjett + dato
+      html += '<span class="undersec-budget-right">'
         + '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Rev.budsjett"'
         +   ' value="'+(_bgt.revidert!=null&&_bgt.revidert!==''?_bgt.revidert:'')+'"'
         +   ' data-bkey="'+_bkeyEsc+'" data-bfield="revidert"'
@@ -543,12 +555,13 @@ function _renderSubGroups(items, secName, hue, today, undersec) {
         +   ' value="'+(_bgt.revisjonsDato||'')+'"'
         +   ' data-bkey="'+_bkeyEsc+'" data-bfield="revisjonsDato"'
         +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
-        + '</span>'
-        + '<button class="sub-add-btn" style="margin-left:auto"'
-        +   ' data-sec="'+secName.replace(/"/g,'&quot;')+'"'
-        +   ' data-sub="'+sub.replace(/"/g,'&quot;')+'"'
-        +   ' data-undersec="'+(undersec||'').replace(/"/g,'&quot;')+'"'
-        +   ' onclick="handleSubAdd(this)">+ Legg til post</button>';
+        + '</span>';
+      // col10: legg til post
+      html += '<span class="sub-add-wrap"><button class="sub-add-btn"'
+        +' data-sec="'+secName.replace(/"/g,'&quot;')+'"'
+        +' data-sub="'+sub.replace(/"/g,'&quot;')+'"'
+        +' data-undersec="'+(undersec||'').replace(/"/g,'&quot;')+'"'
+        +' onclick="handleSubAdd(this)">+ Legg til post</button></span>';
       html += '</div>';
       
     }
@@ -963,7 +976,7 @@ function ukModalConfirm() {
   var name = (document.getElementById('ukmodal-input').value || '').trim();
   var sec = _pendingUkSec;
   if (!name || !sec) { ukModalCancel(); return; }
-  // Create complete new block
+  var addedAny = false;
   Object.entries(SECTIONS_DATA[sec]).forEach(function(e) {
     var sub=e[0], items=e[1];
     items.forEach(function(item) {
@@ -972,8 +985,17 @@ function ukModalConfirm() {
         section:sec, undersec:name, sub:sub, name:item.name,
         selected:false, frist:'', timer:'', status:'Ikke startet', link:'', comment:''
       });
+      addedAny = true;
     });
   });
+  // If section has no template tasks (e.g. 3 YM), add one empty placeholder
+  if (!addedAny) {
+    tasks.push({
+      id:idCounter++, excelId:'',
+      section:sec, undersec:name, sub:'', name:'Ny oppgave',
+      selected:false, frist:'', timer:'', status:'Ikke startet', link:'', comment:''
+    });
+  }
   if(!undersecOpen[sec]) undersecOpen[sec] = {};
   undersecOpen[sec][name] = true;
   ukModalCancel();
