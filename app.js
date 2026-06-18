@@ -467,8 +467,25 @@ function render() {
               +' title="Rediger navn">&#9998;</span>';
             if(uSel>0) html += '<span class="undersec-badge">'+uSel+' valgt</span>';
             html += '<span class="undersec-badge">'+uVis.length+'/'+uAll.length+'</span>';
+            var _ubkey = secName+'||'+usec+'||';
+            var _ubkeyEsc = _ubkey.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+            var _ubgt = undersecBudget[_ubkey] || {};
+            html += '<span class="undersec-budget-inline">'
+              + '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Timer"'
+              +   ' value="'+(_ubgt.timer!=null&&_ubgt.timer!==''?_ubgt.timer:'')+'"'
+              +   ' data-bkey="'+_ubkeyEsc+'" data-bfield="timer"'
+              +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
+              + '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Rev.budsjett"'
+              +   ' value="'+(_ubgt.revidert!=null&&_ubgt.revidert!==''?_ubgt.revidert:'')+'"'
+              +   ' data-bkey="'+_ubkeyEsc+'" data-bfield="revidert"'
+              +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
+              + '<input class="undersec-budget-input undersec-budget-date budget-field" type="date"'
+              +   ' value="'+(_ubgt.revisjonsDato||'')+'"'
+              +   ' data-bkey="'+_ubkeyEsc+'" data-bfield="revisjonsDato"'
+              +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
+              + '</span>';
             html += '<button class="undersec-del-btn"'
-              +' onclick="deleteUndersec('+_jsAttr(secName)+','+_jsAttr(usec)+')"'
+              +' onclick="deleteUndersec('+_jsAttr(secName)+','+_jsAttr(usec)+')\"'
               +' title="Slett underkapittel">\u00d7</button>';
             html += '</div>';
             if(uOpen) html += '<div>'+_renderSubGroups(uVis, secName, hue, today, usec)+'</div>';

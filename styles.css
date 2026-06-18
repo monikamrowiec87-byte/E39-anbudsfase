@@ -813,13 +813,14 @@
   }
 
   .sub-header{
-    padding:6px 14px 6px 11px;
+    padding:0 14px 0 11px;
     background:var(--surface);
     border-bottom:0.5px solid var(--border);
     border-left:2px solid var(--sub-accent, #888);
-    display:flex;
-    align-items:center;
-    gap:8px;
+    display:grid;
+    grid-template-columns: 20px 32px var(--col-post,minmax(0,1.4fr)) var(--col-ansvar,120px) var(--col-frist,115px) var(--col-timer,85px) var(--col-status,115px) var(--col-fredag,minmax(0,1.05fr)) var(--col-lenke,110px) var(--col-kommentar,minmax(0,1fr));
+    gap: 8px;
+    align-items: center;
     min-height: 38px;
   }
   .sub-cb { width:14px; height:14px; cursor:pointer; accent-color:var(--accent); flex-shrink:0; }
@@ -831,20 +832,25 @@
     transition:background .12s; flex-shrink:0;
   }
 
-  /* Budget fields — timer sits in col 6, extras in col 7 (fredag) */
-  .sub-header { position: relative; }
-
-  .undersec-budget-all {
-    position: absolute;
-    /* left = cb(32) + gap(8) + post(var) + gap(8) + ansvar(var) + gap(8) + frist(var) + gap(8) + left-border+padding(11+14) */
-    left: calc(32px + var(--col-post, 280px) + var(--col-ansvar, 120px) + var(--col-frist, 115px) + 72px);
+  /* Budget fields in sub-header grid */
+  .sub-name-wrap {
     display: flex;
     align-items: center;
     gap: 6px;
-    top: 50%;
-    transform: translateY(-50%);
+    overflow: hidden;
+    min-width: 0;
+    grid-column: 3; /* post column */
   }
-  .sub-name-wrap {
+  .undersec-budget-all {
+    grid-column: 6;  /* timer column */
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow: hidden;
+    min-width: 0;
+  }
+  .undersec-budget-right {
+    grid-column: 7 / span 3;  /* status+fredag+lenke */
     display: flex;
     align-items: center;
     gap: 6px;
@@ -852,11 +858,19 @@
     min-width: 0;
   }
   .sub-add-wrap {
+    grid-column: 10; /* kommentar column = last */
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    grid-column: -1;
   }
+  .undersec-budget-inline {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: 12px;
+    flex-shrink: 0;
+  }
+
   .undersec-budget-label {
     font-size: 10px;
     font-weight: 600;
