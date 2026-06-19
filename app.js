@@ -439,13 +439,17 @@ function render() {
               +' title="Rediger navn">&#9998;</span>';
             if(uSel>0) html += '<span class="undersec-badge">'+uSel+' valgt</span>';
             html += '<span class="undersec-badge">'+uVis.length+'/'+uAll.length+'</span>';
-            var _ubkey = secName+'||'+usec+'||';
-            var _ubkeyEsc = _ubkey.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
-            var _ubgt = undersecBudget[_ubkey] || {};
-            html += '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Timer"'
-              +   ' value="'+(_ubgt.timer!=null&&_ubgt.timer!==''?_ubgt.timer:'')+'"'
-              +   ' data-bkey="'+_ubkeyEsc+'" data-bfield="timer"'
-              +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />';
+            // Only show timer field here if this undersec has NO real sub-groups (e.g. 3 YM)
+            var _hasRealSub = uAll.some(function(t){ return !!t.sub; });
+            if (!_hasRealSub) {
+              var _ubkey = secName+'||'+usec+'||';
+              var _ubkeyEsc = _ubkey.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+              var _ubgt = undersecBudget[_ubkey] || {};
+              html += '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Timer"'
+                +   ' value="'+(_ubgt.timer!=null&&_ubgt.timer!==''?_ubgt.timer:'')+'"'
+                +   ' data-bkey="'+_ubkeyEsc+'" data-bfield="timer"'
+                +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />';
+            }
             html += '<button class="undersec-del-btn"'
               +' onclick="deleteUndersec('+_jsAttr(secName)+','+_jsAttr(usec)+')"'
               +' title="Slett underkapittel">\u00d7</button>';
@@ -590,13 +594,14 @@ function updateLinkBtn(id) {
 function updateStats() {
   var sel=tasks.filter(t=>t.selected), total=tasks.length;
   var ferdig=tasks.filter(t=>t.status==='Ferdig').length;
-  var totalTimer=sel.reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0);
+  var totalTimer=tasks.reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0)
+    + Object.keys(undersecBudget).reduce(function(s,k){ return s+(parseFloat(undersecBudget[k].timer)||0); },0);
   var pct=total>0?Math.round(ferdig/total*100):0;
   var today=getToday();
   var overdue=tasks.filter(t=>t.selected&&t.frist&&t.frist<today&&t.status!=='Ferdig').length;
   document.getElementById('stats-bar').innerHTML =
     '<div class="stat"><div class="stat-label">Valgte poster</div><div class="stat-value">'+sel.length+'</div><div class="stat-sub">av '+total+' totalt</div></div>'
-    +'<div class="stat"><div class="stat-label">Budsjetterte timer</div><div class="stat-value">'+(totalTimer>0?totalTimer:'\u2013')+'</div><div class="stat-sub">for valgte poster</div></div>'
+    +'<div class="stat"><div class="stat-label">Budsjetterte timer</div><div class="stat-value">'+(totalTimer>0?totalTimer:'\u2013')+'</div><div class="stat-sub">totalt (poster + grupper)</div></div>'
     +'<div class="stat"><div class="stat-label">Fremdrift</div><div class="stat-value">'+pct+'%</div><div class="progress-wrap"><div class="progress-fill" style="width:'+pct+'%"></div></div></div>'
     +'<div class="stat"><div class="stat-label">Utl\u00f8pt frist</div><div class="stat-value" style="'+(overdue>0?'color:var(--red)':'')+'">'+overdue+'</div><div class="stat-sub">poster</div></div>';
   var selTimer=sel.reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0);

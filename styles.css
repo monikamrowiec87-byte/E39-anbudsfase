@@ -813,14 +813,13 @@
   }
 
   .sub-header{
-    padding:0 14px 0 11px;
+    padding:7px 14px 7px 11px;
     background:var(--surface);
     border-bottom:0.5px solid var(--border);
     border-left:2px solid var(--sub-accent, #888);
-    display:grid;
-    grid-template-columns: 20px 32px var(--col-post,minmax(0,1.4fr)) var(--col-ansvar,120px) var(--col-frist,115px) var(--col-timer,85px) var(--col-status,115px) var(--col-fredag,minmax(0,1.05fr)) var(--col-lenke,110px) var(--col-kommentar,minmax(0,1fr));
-    gap: 8px;
-    align-items: center;
+    display:flex;
+    align-items:center;
+    gap:8px;
     min-height: 38px;
   }
   .sub-cb { width:14px; height:14px; cursor:pointer; accent-color:var(--accent); flex-shrink:0; }
@@ -830,36 +829,19 @@
     border:0.5px solid var(--border2); background:var(--surface);
     color:var(--accent); cursor:pointer; white-space:nowrap;
     transition:background .12s; flex-shrink:0;
-  }
-
-  /* Budget fields — timer sits in col 6, extras in col 7 (fredag) */
-  .undersec-budget-group {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    overflow: hidden;
-    min-width: 0;
-  }
-  .undersec-budget-extra {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    grid-column: 7; /* fredag column */
-    overflow: hidden;
-    min-width: 0;
+    margin-left: auto;
   }
   .sub-name-wrap {
     display: flex;
     align-items: center;
     gap: 6px;
-    overflow: hidden;
-    min-width: 0;
+    flex-shrink: 0;
   }
-  .sub-add-wrap {
+  .undersec-budget-group {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    grid-column: -1;
+    gap: 4px;
+    flex-shrink: 0;
   }
   .undersec-budget-label {
     font-size: 10px;
@@ -870,8 +852,8 @@
     flex-shrink: 0;
   }
   .undersec-budget-input {
-    width: 60px;
-    padding: 2px 6px;
+    width: 64px;
+    padding: 3px 7px;
     font-size: 11px;
     font-family: inherit;
     border: 1px solid var(--border2);
