@@ -972,6 +972,8 @@ function setUndersecBudget(key, field, value) {
   if (!undersecBudget[key]) undersecBudget[key] = {};
   undersecBudget[key][field] = value;
   try { localStorage.setItem('bl_budget', JSON.stringify(undersecBudget)); } catch(e) {}
+  updateStats();
+  scheduleAutoSave();
 }
 
 var _pendingUkSec = null;
@@ -1638,6 +1640,7 @@ async function spPush() {
     var ts = Date.now();
     var payload = {
       tasks: tasks, sectionOpen: sectionOpen, undersecOpen: undersecOpen,
+      undersecBudget: undersecBudget,
       SECTIONS_DATA: SECTIONS_DATA, vacations: vacations, vacIdCounter: vacIdCounter,
       projectLinks: projectLinks, linkIdCounter: linkIdCounter,
       modelLinks: modelLinks, modelIdCounter: modelIdCounter,
@@ -1730,6 +1733,11 @@ function spMerge(remote) {
   // Restore other state
   if (remote.sectionOpen)  Object.assign(sectionOpen, remote.sectionOpen);
   if (remote.undersecOpen) Object.assign(undersecOpen, remote.undersecOpen);
+  if (remote.undersecBudget) {
+    Object.keys(undersecBudget).forEach(function(k){ delete undersecBudget[k]; });
+    Object.assign(undersecBudget, remote.undersecBudget);
+    try { localStorage.setItem('bl_budget', JSON.stringify(undersecBudget)); } catch(e) {}
+  }
   if (remote.vacations) {
     vacations = remote.vacations;
     vacIdCounter = remote.vacIdCounter || (Math.max.apply(null, [0].concat(vacations.map(function(v){return v.id||0;}))) + 1);
@@ -1751,6 +1759,7 @@ function spMerge(remote) {
   try {
     localStorage.setItem('bestillingsliste_v4', JSON.stringify({
       tasks: tasks, sectionOpen: sectionOpen, undersecOpen: undersecOpen,
+      undersecBudget: undersecBudget,
       SECTIONS_DATA: SECTIONS_DATA, vacations: vacations, vacIdCounter: vacIdCounter,
       projectLinks: projectLinks, linkIdCounter: linkIdCounter,
       modelLinks: modelLinks, modelIdCounter: modelIdCounter
@@ -1788,7 +1797,12 @@ try { _hasSaved = !!localStorage.getItem('bestillingsliste_v4'); } catch(e) {}
 
 
 window.addEventListener('DOMContentLoaded', function () {
-  initTasks();
+  if (_hasSaved) {
+    initTasksFromSaved();
+  } else {
+    initTasks();
+  }
+  loadSaved();
   render();
   renderLinks();
   renderModelLinks();
