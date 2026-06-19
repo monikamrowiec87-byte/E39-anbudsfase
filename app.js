@@ -502,31 +502,38 @@ function _renderSubGroups(items, secName, hue, today, undersec) {
     if(sub){
       var sc2='hsl('+hue+',45%,38%)';
       var allS=si.length>0&&si.every(function(t){return t.selected;});
-      html += '<div class="sub-header" style="--sub-accent:'+sc2+'">';
-      html += '<input type="checkbox" class="sub-cb"'+(allS?' checked':'')
+      html += '<div class="sub-header sub-header-grid" style="--sub-accent:'+sc2+'">';
+      html += '<span class="sub-grid-cell sub-grid-drag"></span>';
+      html += '<input type="checkbox" class="sub-cb sub-grid-cell"'+(allS?' checked':'')
         +' data-sec="'+secName.replace(/"/g,'&quot;')+'"'
         +' data-sub="'+sub.replace(/"/g,'&quot;')+'"'
         +' onchange="handleSubCb(this)" title="Velg alle">';
+      html += '<span class="sub-grid-cell sub-name-wrap">';
       html += '<span class="sub-name"'
         +' data-sec="'+secName.replace(/"/g,'&quot;')+'"'
         +' data-sub="'+sub.replace(/"/g,'&quot;')+'"'
         +' ondblclick="startEditSubName(this)">'+esc(sub)+'</span>';
       html += '<span class="sub-edit-hint" ondblclick="startEditSubName(this.previousElementSibling)">&#9998;</span>';
       html += '<span class="sub-count">'+si.length+'</span>';
+      html += '</span>';
+      html += '<span class="sub-grid-cell"></span>'; // ansvar col (empty)
+      html += '<span class="sub-grid-cell"></span>'; // frist col (empty)
       var _bkey = secName+'||'+(undersec||'')+'||'+sub;
       var _bkeyEsc = _bkey.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
       var _bgt = undersecBudget[_bkey] || {};
-      html += '<span class="undersec-budget-group">'
+      html += '<span class="sub-grid-cell undersec-budget-group">'
         + '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Timer"'
         +   ' value="'+(_bgt.timer!=null&&_bgt.timer!==''?_bgt.timer:'')+'"'
         +   ' data-bkey="'+_bkeyEsc+'" data-bfield="timer"'
         +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />'
         + '</span>';
+      html += '<span class="sub-grid-cell sub-grid-tail" style="grid-column:7 / -1">';
       html += '<button class="sub-add-btn"'
         +' data-sec="'+secName.replace(/"/g,'&quot;')+'"'
         +' data-sub="'+sub.replace(/"/g,'&quot;')+'"'
         +' data-undersec="'+(undersec||'').replace(/"/g,'&quot;')+'"'
         +' onclick="handleSubAdd(this)">+ Legg til post</button>';
+      html += '</span>';
       html += '</div>';
     }
     si.forEach(function(t){
@@ -595,7 +602,20 @@ function updateStats() {
   var sel=tasks.filter(t=>t.selected), total=tasks.length;
   var ferdig=tasks.filter(t=>t.status==='Ferdig').length;
   var totalTimer=tasks.reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0)
-    + Object.keys(undersecBudget).reduce(function(s,k){ return s+(parseFloat(undersecBudget[k].timer)||0); },0);
+    + Object.keys(undersecBudget).reduce(function(s,k){
+        var bt=parseFloat(undersecBudget[k].timer)||0;
+        if(bt<=0) return s;
+        // key format: section||undersec||sub  (sub may be empty)
+        var parts=k.split('||'), gSec=parts[0], gUsec=parts[1]||'', gSub=parts[2]||'';
+        var groupTasks = tasks.filter(function(t){
+          if(t.section!==gSec) return false;
+          if((t.undersec||'')!==gUsec) return false;
+          if(gSub && (t.sub||'')!==gSub) return false;
+          return true;
+        });
+        var hasOwnTimer = groupTasks.some(function(t){ return (parseFloat(t.timer)||0)>0; });
+        return hasOwnTimer ? s : s+bt;
+      },0);
   var pct=total>0?Math.round(ferdig/total*100):0;
   var today=getToday();
   var overdue=tasks.filter(t=>t.selected&&t.frist&&t.frist<today&&t.status!=='Ferdig').length;

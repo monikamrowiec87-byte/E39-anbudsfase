@@ -701,6 +701,10 @@
     .col-headers { display: none; }
     .task-row { grid-template-columns: 20px 28px 1fr; gap: 6px; }
     .task-row > *:not(:nth-child(1)):not(:nth-child(2)) { display: none; }
+    .sub-header-grid { display:flex; flex-wrap:wrap; align-items:center; gap:6px 8px; }
+    .sub-grid-drag { display:none; }
+    .sub-header-grid > .sub-grid-cell:not(.sub-cb):not(.sub-name-wrap):not(.undersec-budget-group):not(.sub-grid-tail) { display:none; }
+    .sub-grid-tail { display:flex; margin-left:auto; }
   }
 
   /* ── Inline name edit (pencil) ── */
@@ -817,11 +821,17 @@
     background:var(--surface);
     border-bottom:0.5px solid var(--border);
     border-left:2px solid var(--sub-accent, #888);
-    display:flex;
     align-items:center;
-    gap:8px;
     min-height: 38px;
   }
+  .sub-header-grid{
+    display:grid;
+    grid-template-columns: 20px 32px var(--col-post,minmax(0,1.4fr)) var(--col-ansvar,120px) var(--col-frist,115px) var(--col-timer,85px) var(--col-status,115px) var(--col-fredag,minmax(0,1.05fr)) var(--col-lenke,110px) var(--col-kommentar,minmax(0,1fr));
+    column-gap:10px;
+  }
+  .sub-grid-cell{ display:flex; align-items:center; min-width:0; }
+  .sub-grid-drag{ }
+  .sub-grid-tail{ justify-content:flex-end; gap:8px; }
   .sub-cb { width:14px; height:14px; cursor:pointer; accent-color:var(--accent); flex-shrink:0; }
   .sub-add-btn {
     font-size:12.1px; font-weight:600;
@@ -835,7 +845,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    flex-shrink: 0;
+    min-width: 0;
   }
   .undersec-budget-group {
     display: flex;
