@@ -393,6 +393,39 @@ function render() {
     var totalInSec = tasks.filter(function(t){return t.section===secName;}).length;
 
     html += '<div class="section-block">';
+    if(isGen){
+      var _gbkey = secName+'||||';
+      var _gbkeyEsc = _gbkey.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+      var _gbgt = undersecBudget[_gbkey] || {};
+      var _genHasOwnTimer = tasks.some(function(t){return t.section===secName && (parseFloat(t.timer)||0)>0;});
+      html += '<div class="section-header section-header-grid" style="--sec-color:'+secColor+'" onclick="toggleSection(decodeURIComponent(\''+secKey+'\'))">';
+      html += '<span class="sub-grid-cell chevron '+(open?'open':'')+'">&#9654;</span>';
+      html += '<input type="checkbox" class="sec-cb sub-grid-cell"'+(allSecSel?' checked':'')
+        +' data-sec="'+secName.replace(/"/g,'&quot;')+'"'
+        +' onchange="handleSecCb(this)"'
+        +' style="width:14px;height:14px;cursor:pointer;accent-color:var(--accent);flex-shrink:0;margin-right:2px"'
+        +' onclick="event.stopPropagation()">';
+      html += '<span class="sub-grid-cell" style="min-width:0;gap:6px;display:flex;align-items:center">';
+      html += '<span class="section-name" style="color:'+secColor+'"'
+        +' ondblclick="startEditSecName(this,decodeURIComponent(\''+secKey+'\'))"'
+        +' title="Dobbeltklikk for \u00e5 redigere">'+esc(secName)+'</span>';
+      html += '<span class="sec-edit-hint" ondblclick="startEditSecName(this.previousElementSibling,decodeURIComponent(\''+secKey+'\'))">&#9998;</span>';
+      if(selCount>0) html += '<span class="sec-badge sec-sel">'+selCount+' valgt</span>';
+      html += '<span class="sec-badge sec-count">'+totalInSec+'</span>';
+      html += '</span>';
+      html += '<span class="sub-grid-cell"></span>'; // ansvar col (empty)
+      html += '<span class="sub-grid-cell"></span>'; // frist col (empty)
+      html += '<span class="sub-grid-cell undersec-budget-group">';
+      if(!_genHasOwnTimer){
+        html += '<input class="undersec-budget-input budget-field" type="number" min="0" placeholder="Timer"'
+          +   ' value="'+(_gbgt.timer!=null&&_gbgt.timer!==''?_gbgt.timer:'')+'"'
+          +   ' data-bkey="'+_gbkeyEsc+'" data-bfield="timer"'
+          +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />';
+      }
+      html += '</span>';
+      html += '<span class="sub-grid-cell sub-grid-tail" style="grid-column:7 / -1"></span>';
+      html += '</div>';
+    } else {
     html += '<div class="section-header" style="--sec-color:'+secColor+'" onclick="toggleSection(decodeURIComponent(\''+secKey+'\'))">';
     html += '<span class="chevron '+(open?'open':'')+'">&#9654;</span>';
     html += '<input type="checkbox" class="sec-cb"'+(allSecSel?' checked':'')
@@ -407,6 +440,7 @@ function render() {
     if(selCount>0) html += '<span class="sec-badge sec-sel">'+selCount+' valgt</span>';
     html += '<span class="sec-badge sec-count">'+totalInSec+'</span>';
     html += '</div>';
+    }
 
     if(open){
       html += '<div class="task-rows">';
@@ -428,7 +462,10 @@ function render() {
             var uOpen = !undersecOpen[secName] || undersecOpen[secName][usec] !== false;
             var lc = 'hsl('+hue+',45%,55%)';
             html += '<div class="undersec-block" style="--undersec-color:'+lc+'">';
-            html += '<div class="undersec-header">';
+            html += '<div class="undersec-header undersec-header-grid">';
+            html += '<span class="sub-grid-cell sub-grid-drag"></span>';
+            html += '<span class="sub-grid-cell"></span>'; // checkbox col (none for undersec)
+            html += '<span class="sub-grid-cell undersec-name-wrap">';
             html += '<span class="undersec-chevron '+(uOpen?'open':'')+'"'
               +' onclick="toggleUndersec('+_jsAttr(secName)+','+_jsAttr(usec)+')">&#9654;</span>';
             html += '<span class="undersec-name"'
@@ -439,8 +476,12 @@ function render() {
               +' title="Rediger navn">&#9998;</span>';
             if(uSel>0) html += '<span class="undersec-badge">'+uSel+' valgt</span>';
             html += '<span class="undersec-badge">'+uVis.length+'/'+uAll.length+'</span>';
+            html += '</span>';
+            html += '<span class="sub-grid-cell"></span>'; // ansvar col (empty)
+            html += '<span class="sub-grid-cell"></span>'; // frist col (empty)
             // Only show timer field here if this undersec has NO real sub-groups (e.g. 3 YM)
             var _hasRealSub = uAll.some(function(t){ return !!t.sub; });
+            html += '<span class="sub-grid-cell undersec-budget-group">';
             if (!_hasRealSub) {
               var _ubkey = secName+'||'+usec+'||';
               var _ubkeyEsc = _ubkey.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
@@ -450,9 +491,12 @@ function render() {
                 +   ' data-bkey="'+_ubkeyEsc+'" data-bfield="timer"'
                 +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />';
             }
+            html += '</span>';
+            html += '<span class="sub-grid-cell sub-grid-tail" style="grid-column:7 / -1">';
             html += '<button class="undersec-del-btn"'
               +' onclick="deleteUndersec('+_jsAttr(secName)+','+_jsAttr(usec)+')"'
               +' title="Slett underkapittel">\u00d7</button>';
+            html += '</span>';
             html += '</div>';
             if(uOpen) html += '<div>'+_renderSubGroups(uVis, secName, hue, today, usec)+'</div>';
             html += '</div>';
