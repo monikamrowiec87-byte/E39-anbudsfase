@@ -18,6 +18,35 @@ let undersecOpen = {};
 let undersecBudget = {}; // {key: {timer, revidert, revisjonsDato}}
 let vacations = [];
 let vacIdCounter = 1;
+
+// Old section names → current names. Applied consistently to SECTIONS_DATA keys,
+// task.section values, sectionOpen keys, undersecOpen keys, and undersecBudget keys
+// whenever data is restored from localStorage or a shared/synced source, so older
+// saved data keeps working with section-specific logic (e.g. "0 Generell" timer field).
+const SECTION_MIGRATIONS = {'0 Tema': '0 Generell', '2 Tunneler': '1 Tunneler', '1 Konstruksjoner/bruer': '2 Konstruksjoner/bruer'};
+function migrateSectionName(name) { return SECTION_MIGRATIONS[name] || name; }
+
+function migrateSectionsData(obj) {
+  if (!obj) return obj;
+  var out = {};
+  Object.keys(obj).forEach(function(k) {
+    var newKey = migrateSectionName(k);
+    // If migration would collide with an existing key, merge sub-objects shallowly
+    out[newKey] = Object.assign({}, out[newKey] || {}, obj[k]);
+  });
+  return out;
+}
+
+function migrateUndersecBudgetKeys(obj) {
+  if (!obj) return obj;
+  var out = {};
+  Object.keys(obj).forEach(function(k) {
+    var parts = k.split('||');
+    parts[0] = migrateSectionName(parts[0]);
+    out[parts.join('||')] = obj[k];
+  });
+  return out;
+}
 let vacTimelineOffset = -7;
 let vacTimelineDays = 70;
 let idCounter = 0;
@@ -93,21 +122,25 @@ function loadSaved() {
     // Restore section structure (handles renames)
     if (data.SECTIONS_DATA) {
       Object.keys(SECTIONS_DATA).forEach(function(k){ delete SECTIONS_DATA[k]; });
-      Object.assign(SECTIONS_DATA, data.SECTIONS_DATA);
+      Object.assign(SECTIONS_DATA, migrateSectionsData(data.SECTIONS_DATA));
     }
 
     // Restore undersec open/closed state
-    if (data.undersecOpen) Object.assign(undersecOpen, data.undersecOpen);
-    if (data.undersecBudget) Object.assign(undersecBudget, data.undersecBudget);
+    if (data.undersecOpen) {
+      Object.keys(data.undersecOpen).forEach(function(k){
+        var newKey = migrateSectionName(k);
+        undersecOpen[newKey] = Object.assign({}, undersecOpen[newKey] || {}, data.undersecOpen[k]);
+      });
+    }
+    if (data.undersecBudget) Object.assign(undersecBudget, migrateUndersecBudgetKeys(data.undersecBudget));
   } catch(e) {}
   try { var _bl=localStorage.getItem('bl_budget'); if(_bl) Object.assign(undersecBudget, JSON.parse(_bl)); } catch(e) {}
   try {
 
     // Restore section open/closed state (with migration of old names)
     if (data.sectionOpen) {
-      var migrations = {'0 Tema': '0 Generell', '2 Tunneler': '1 Tunneler', '1 Konstruksjoner/bruer': '2 Konstruksjoner/bruer'};
       Object.keys(data.sectionOpen).forEach(function(k) {
-        var key = migrations[k] || k;
+        var key = migrateSectionName(k);
         sectionOpen[key] = data.sectionOpen[k];
       });
     }
@@ -137,7 +170,7 @@ function loadSaved() {
         data.tasks.forEach(function(s) {
           tasks.push({
             id: s.id, excelId: s.excelId || '',
-            section: s.section, undersec: s.undersec || '', sub: s.sub || '',
+            section: migrateSectionName(s.section), undersec: s.undersec || '', sub: s.sub || '',
             name: s.name,
             selected: !!s.selected,
             frist: s.frist || '', timer: s.timer || '',
@@ -169,6 +202,7 @@ function loadSaved() {
         // Restore custom-added tasks (excelId === '')
         data.tasks.forEach(function(s) {
           if (s.excelId === '' && !tasks.find(function(t){ return t.id===s.id; })) {
+            s.section = migrateSectionName(s.section);
             tasks.push(s);
             if (s.id >= idCounter) idCounter = s.id + 1;
           }
@@ -1706,7 +1740,7 @@ function spMerge(remote) {
   // Restore section structure first
   if (remote.SECTIONS_DATA) {
     Object.keys(SECTIONS_DATA).forEach(function(k){ delete SECTIONS_DATA[k]; });
-    Object.assign(SECTIONS_DATA, remote.SECTIONS_DATA);
+    Object.assign(SECTIONS_DATA, migrateSectionsData(remote.SECTIONS_DATA));
   }
 
   // Replace tasks entirely with remote version (preserves underkapitler exactly as sender has them)
@@ -1714,7 +1748,7 @@ function spMerge(remote) {
     return {
       id: s.id,
       excelId: s.excelId || '',
-      section: s.section,
+      section: migrateSectionName(s.section),
       undersec: s.undersec || '',
       sub: s.sub || '',
       name: s.name || '',
@@ -1731,11 +1765,20 @@ function spMerge(remote) {
   tasks.forEach(function(t){ if (t.id >= idCounter) idCounter = t.id + 1; });
 
   // Restore other state
-  if (remote.sectionOpen)  Object.assign(sectionOpen, remote.sectionOpen);
-  if (remote.undersecOpen) Object.assign(undersecOpen, remote.undersecOpen);
+  if (remote.sectionOpen) {
+    Object.keys(remote.sectionOpen).forEach(function(k){
+      sectionOpen[migrateSectionName(k)] = remote.sectionOpen[k];
+    });
+  }
+  if (remote.undersecOpen) {
+    Object.keys(remote.undersecOpen).forEach(function(k){
+      var newKey = migrateSectionName(k);
+      undersecOpen[newKey] = Object.assign({}, undersecOpen[newKey] || {}, remote.undersecOpen[k]);
+    });
+  }
   if (remote.undersecBudget) {
     Object.keys(undersecBudget).forEach(function(k){ delete undersecBudget[k]; });
-    Object.assign(undersecBudget, remote.undersecBudget);
+    Object.assign(undersecBudget, migrateUndersecBudgetKeys(remote.undersecBudget));
     try { localStorage.setItem('bl_budget', JSON.stringify(undersecBudget)); } catch(e) {}
   }
   if (remote.vacations) {
