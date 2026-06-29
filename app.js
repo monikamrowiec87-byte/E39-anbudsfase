@@ -1,4 +1,30 @@
-const STATUSES = ['Ikke startet','Pågår','Til review','Ferdig','Blokkert'];
+const STATUSES = ['Ikke startet','Pågår','Til revi
+function debugBudget() {
+  var keys = Object.keys(undersecBudget);
+  var lines = ['=== undersecBudget nøkler ==='];
+  keys.forEach(function(k){ lines.push(k + ' = ' + (undersecBudget[k].timer||'tom')); });
+  lines.push('');
+  lines.push('=== TOTAL beregning ===');
+  var total = tasks.reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0);
+  lines.push('Task-timere: ' + total);
+  keys.forEach(function(k){
+    var bt=parseFloat(undersecBudget[k].timer)||0;
+    if(bt<=0) return;
+    var parts=k.split('||'),gSec=parts[0],gUsec=parts[1]||'',gSub=parts[2]||'';
+    if(gSub!==''){
+      var hasU=Object.keys(undersecBudget).some(function(k2){var p=k2.split('||');return p[0]===gSec&&(p[1]||'')===gUsec&&(p[2]||'')==='';});
+      if(hasU){lines.push('HOPP (undersec finnes): '+k);return;}
+    }
+    var gt=tasks.filter(function(t){return t.section===gSec&&(t.undersec||'')===gUsec&&(t.sub||'')===gSub;});
+    var hot=gt.some(function(t){return (parseFloat(t.timer)||0)>0;});
+    if(!hot){total+=bt;lines.push('LEGG TIL '+bt+': '+k);}
+    else lines.push('HOPP (egne timer): '+k);
+  });
+  lines.push('');
+  lines.push('TOTAL: ' + total);
+  alert(lines.join('\n'));
+}
+ew','Ferdig','Blokkert'];
 const FREDAG_PCTS = (function(){ var a=['']; for(var i=0;i<=100;i+=5) a.push(i+'%'); return a; })();
 const STATUS_COLORS = {
   'Ikke startet': {bg:'var(--gray-bg)',  color:'var(--gray)'},
@@ -743,6 +769,7 @@ function updateStats() {
   var overdue=tasks.filter(t=>t.selected&&t.frist&&t.frist<today&&t.status!=='Ferdig').length;
   document.getElementById('stats-bar').innerHTML =
     '<div class="stat"><div class="stat-label">Valgte poster</div><div class="stat-value">'+sel.length+'</div><div class="stat-sub">av '+total+' totalt</div></div>'
+    +'<button onclick="debugBudget()" style="position:absolute;right:8px;top:8px;font-size:10px;padding:2px 6px;cursor:pointer">Debug timer</button>'
     +'<div class="stat"><div class="stat-label">Budsjetterte timer</div><div class="stat-value">'+(totalTimer>0?totalTimer:'\u2013')+'</div><div class="stat-sub">totalt (poster + grupper)</div></div>'
     +'<div class="stat"><div class="stat-label">Fremdrift</div><div class="stat-value">'+pct+'%</div><div class="progress-wrap"><div class="progress-fill" style="width:'+pct+'%"></div></div></div>'
     +'<div class="stat"><div class="stat-label">Utl\u00f8pt frist</div><div class="stat-value" style="'+(overdue>0?'color:var(--red)':'')+'">'+overdue+'</div><div class="stat-sub">poster</div></div>';
