@@ -687,28 +687,21 @@ function updateLinkBtn(id) {
 }
 
 function calcBudgetTimer() {
-  // Sum task-level timers
   var total = tasks.reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0);
-  // Add group budgets, but only when they are not covered by a more specific budget or own task timers
   Object.keys(undersecBudget).forEach(function(k){
     var bt = parseFloat(undersecBudget[k].timer)||0;
     if(bt<=0) return;
     var parts=k.split('||'), gSec=parts[0], gUsec=parts[1]||'', gSub=parts[2]||'';
-    // If this is an undersec-level budget (gSub===''), skip it if any sub-group budget exists for this undersec
-    // (the sub-group budgets will cover the tasks instead)
-    if(gSub==='') {
-      var hasSubBudget = Object.keys(undersecBudget).some(function(k2){
-        if(k2===k) return false;
+    // Sub-group budget: skip if an undersec-level budget exists for same section+undersec
+    if(gSub!=='') {
+      var hasUndersecBudget = Object.keys(undersecBudget).some(function(k2){
         var p2=k2.split('||');
-        return p2[0]===gSec && (p2[1]||'')===gUsec && (p2[2]||'')!=='';
+        return p2[0]===gSec && (p2[1]||'')===gUsec && (p2[2]||'')==='';
       });
-      if(hasSubBudget) return; // sub-group budgets take precedence
+      if(hasUndersecBudget) return;
     }
     var groupTasks=tasks.filter(function(t){
-      if(t.section!==gSec) return false;
-      if((t.undersec||'')!==gUsec) return false;
-      if((t.sub||'')!==gSub) return false;
-      return true;
+      return t.section===gSec && (t.undersec||'')===gUsec && (t.sub||'')===gSub;
     });
     var hasOwnTimer=groupTasks.some(function(t){ return (parseFloat(t.timer)||0)>0; });
     if(!hasOwnTimer) total+=bt;
@@ -723,19 +716,15 @@ function calcFerdigTimer() {
     var bt = parseFloat(undersecBudget[k].timer)||0;
     if(bt<=0) return;
     var parts=k.split('||'), gSec=parts[0], gUsec=parts[1]||'', gSub=parts[2]||'';
-    if(gSub==='') {
-      var hasSubBudget = Object.keys(undersecBudget).some(function(k2){
-        if(k2===k) return false;
+    if(gSub!=='') {
+      var hasUndersecBudget = Object.keys(undersecBudget).some(function(k2){
         var p2=k2.split('||');
-        return p2[0]===gSec && (p2[1]||'')===gUsec && (p2[2]||'')!=='';
+        return p2[0]===gSec && (p2[1]||'')===gUsec && (p2[2]||'')==='';
       });
-      if(hasSubBudget) return;
+      if(hasUndersecBudget) return;
     }
     var groupTasks=tasks.filter(function(t){
-      if(t.section!==gSec) return false;
-      if((t.undersec||'')!==gUsec) return false;
-      if((t.sub||'')!==gSub) return false;
-      return true;
+      return t.section===gSec && (t.undersec||'')===gUsec && (t.sub||'')===gSub;
     });
     var hasOwnTimer=groupTasks.some(function(t){ return (parseFloat(t.timer)||0)>0; });
     if(hasOwnTimer) return;
