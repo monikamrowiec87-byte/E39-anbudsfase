@@ -676,69 +676,24 @@ function updateLinkBtn(id) {
   else if(btn){ btn.href=t.link; }
 }
 
-function calcBudgetTimer() {
-  // Sum task-level timers
-  var total = tasks.reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0);
-  // Add group budgets, but only when they are not covered by a more specific budget or own task timers
-  Object.keys(undersecBudget).forEach(function(k){
-    var bt = parseFloat(undersecBudget[k].timer)||0;
-    if(bt<=0) return;
-    var parts=k.split('||'), gSec=parts[0], gUsec=parts[1]||'', gSub=parts[2]||'';
-    // If this is an undersec-level budget (gSub===''), skip it if any sub-group budget exists for this undersec
-    // (the sub-group budgets will cover the tasks instead)
-    if(gSub==='') {
-      var hasSubBudget = Object.keys(undersecBudget).some(function(k2){
-        if(k2===k) return false;
-        var p2=k2.split('||');
-        return p2[0]===gSec && (p2[1]||'')===gUsec && (p2[2]||'')!=='';
-      });
-      if(hasSubBudget) return; // sub-group budgets take precedence
-    }
-    var groupTasks=tasks.filter(function(t){
-      if(t.section!==gSec) return false;
-      if((t.undersec||'')!==gUsec) return false;
-      if((t.sub||'')!==gSub) return false;
-      return true;
-    });
-    var hasOwnTimer=groupTasks.some(function(t){ return (parseFloat(t.timer)||0)>0; });
-    if(!hasOwnTimer) total+=bt;
-  });
-  return total;
-}
-
-function calcFerdigTimer() {
-  var total = tasks.filter(function(t){ return t.status==='Ferdig'; })
-                   .reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0);
-  Object.keys(undersecBudget).forEach(function(k){
-    var bt = parseFloat(undersecBudget[k].timer)||0;
-    if(bt<=0) return;
-    var parts=k.split('||'), gSec=parts[0], gUsec=parts[1]||'', gSub=parts[2]||'';
-    if(gSub==='') {
-      var hasSubBudget = Object.keys(undersecBudget).some(function(k2){
-        if(k2===k) return false;
-        var p2=k2.split('||');
-        return p2[0]===gSec && (p2[1]||'')===gUsec && (p2[2]||'')!=='';
-      });
-      if(hasSubBudget) return;
-    }
-    var groupTasks=tasks.filter(function(t){
-      if(t.section!==gSec) return false;
-      if((t.undersec||'')!==gUsec) return false;
-      if((t.sub||'')!==gSub) return false;
-      return true;
-    });
-    var hasOwnTimer=groupTasks.some(function(t){ return (parseFloat(t.timer)||0)>0; });
-    if(hasOwnTimer) return;
-    var allFerdig=groupTasks.length>0 && groupTasks.every(function(t){ return t.status==='Ferdig'; });
-    if(allFerdig) total+=bt;
-  });
-  return total;
-}
-
 function updateStats() {
   var sel=tasks.filter(t=>t.selected), total=tasks.length;
   var ferdig=tasks.filter(t=>t.status==='Ferdig').length;
-  var totalTimer=calcBudgetTimer();
+  var totalTimer=tasks.reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0)
+    + Object.keys(undersecBudget).reduce(function(s,k){
+        var bt=parseFloat(undersecBudget[k].timer)||0;
+        if(bt<=0) return s;
+        // key format: section||undersec||sub  (sub may be empty)
+        var parts=k.split('||'), gSec=parts[0], gUsec=parts[1]||'', gSub=parts[2]||'';
+        var groupTasks = tasks.filter(function(t){
+          if(t.section!==gSec) return false;
+          if((t.undersec||'')!==gUsec) return false;
+          if((t.sub||'')!==gSub) return false;
+          return true;
+        });
+        var hasOwnTimer = groupTasks.some(function(t){ return (parseFloat(t.timer)||0)>0; });
+        return hasOwnTimer ? s : s+bt;
+      },0);
   var pct=total>0?Math.round(ferdig/total*100):0;
   var today=getToday();
   var overdue=tasks.filter(t=>t.selected&&t.frist&&t.frist<today&&t.status!=='Ferdig').length;
@@ -823,8 +778,37 @@ function renderDashboard() {
   var today=getToday(),total=tasks.length,ferdig=tasks.filter(t=>t.status==='Ferdig').length;
   var pct=total>0?Math.round(ferdig/total*100):0;
   var overdue=tasks.filter(t=>t.frist&&t.frist<today&&t.status!=='Ferdig');
-  var totalTimer=calcBudgetTimer();
-  var ferdigTimer=calcFerdigTimer();
+  var totalTimer=tasks.reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0)
+    + Object.keys(undersecBudget).reduce(function(s,k){
+        var bt=parseFloat(undersecBudget[k].timer)||0;
+        if(bt<=0) return s;
+        var parts=k.split('||'), gSec=parts[0], gUsec=parts[1]||'', gSub=parts[2]||'';
+        var groupTasks=tasks.filter(function(t){
+          if(t.section!==gSec) return false;
+          if((t.undersec||'')!==gUsec) return false;
+          if((t.sub||'')!==gSub) return false;
+          return true;
+        });
+        var hasOwnTimer=groupTasks.some(function(t){ return (parseFloat(t.timer)||0)>0; });
+        return hasOwnTimer ? s : s+bt;
+      },0);
+  var ferdigTimer=tasks.filter(t=>t.status==='Ferdig').reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0)
+    + Object.keys(undersecBudget).reduce(function(s,k){
+        var bt=parseFloat(undersecBudget[k].timer)||0;
+        if(bt<=0) return s;
+        var parts=k.split('||'), gSec=parts[0], gUsec=parts[1]||'', gSub=parts[2]||'';
+        var groupTasks=tasks.filter(function(t){
+          if(t.section!==gSec) return false;
+          if((t.undersec||'')!==gUsec) return false;
+          if((t.sub||'')!==gSub) return false;
+          return true;
+        });
+        var hasOwnTimer=groupTasks.some(function(t){ return (parseFloat(t.timer)||0)>0; });
+        if(hasOwnTimer) return s;
+        // Only count group budget as "ferdig" if ALL tasks in the group are Ferdig
+        var allFerdig=groupTasks.length>0 && groupTasks.every(function(t){ return t.status==='Ferdig'; });
+        return allFerdig ? s+bt : s;
+      },0);
   var timerPct=totalTimer>0?Math.round(ferdigTimer/totalTimer*100):0;
   var statusData=[{label:'Ferdig',val:ferdig,color:'#1D9E75'},{label:'P\u00e5g\u00e5r',val:tasks.filter(t=>t.status==='P\u00e5g\u00e5r').length,color:'#EF9F27'},{label:'Til review',val:tasks.filter(t=>t.status==='Til review').length,color:'#378ADD'},{label:'Blokkert',val:tasks.filter(t=>t.status==='Blokkert').length,color:'#E24B4A'},{label:'Ikke startet',val:tasks.filter(t=>t.status==='Ikke startet').length,color:'#B4B2A9'}];
   var r=52,cx=64,cy=64,circ=2*Math.PI*r,off=0;
