@@ -163,7 +163,7 @@ function loadSaved() {
     }
   } catch(e) {}
   try { var _bl=localStorage.getItem('bl_budget'); if(_bl) Object.assign(undersecBudget, JSON.parse(_bl)); } catch(e) {}
-  // Deduplicate stale keys AFTER all sources merged
+  // Deduplicate stale keys AFTER all sources merged, then write back to purge localStorage
   (function(){
     var taskUndersecSet = {};
     tasks.forEach(function(t){ taskUndersecSet[(t.section||'')+'||'+(t.undersec||'')] = true; });
@@ -172,6 +172,7 @@ function loadSaved() {
       if(gUsec==='' || gSub==='') return;
       if(!taskUndersecSet[gSec+'||'+gUsec]) delete undersecBudget[k];
     });
+    try { localStorage.setItem('bl_budget', JSON.stringify(undersecBudget)); } catch(e) {}
   })();
   try {
 
