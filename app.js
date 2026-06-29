@@ -160,17 +160,19 @@ function loadSaved() {
     }
     if (data.undersecBudget) {
       Object.assign(undersecBudget, migrateUndersecBudgetKeys(data.undersecBudget));
-      // Deduplicate stale keys: remove budget entries whose undersec name doesn't match any task
-      var taskUndersecSet = {};
-      tasks.forEach(function(t){ taskUndersecSet[(t.section||'')+'||'+(t.undersec||'')] = true; });
-      Object.keys(undersecBudget).forEach(function(k){
-        var parts=k.split('||'), gSec=parts[0], gUsec=parts[1]||'', gSub=parts[2]||'';
-        if(gUsec==='' || gSub==='') return; // section-level or undersec-level keys are fine
-        if(!taskUndersecSet[gSec+'||'+gUsec]) delete undersecBudget[k]; // stale — remove
-      });
     }
   } catch(e) {}
   try { var _bl=localStorage.getItem('bl_budget'); if(_bl) Object.assign(undersecBudget, JSON.parse(_bl)); } catch(e) {}
+  // Deduplicate stale keys AFTER all sources merged
+  (function(){
+    var taskUndersecSet = {};
+    tasks.forEach(function(t){ taskUndersecSet[(t.section||'')+'||'+(t.undersec||'')] = true; });
+    Object.keys(undersecBudget).forEach(function(k){
+      var parts=k.split('||'), gSec=parts[0], gUsec=parts[1]||'', gSub=parts[2]||'';
+      if(gUsec==='' || gSub==='') return;
+      if(!taskUndersecSet[gSec+'||'+gUsec]) delete undersecBudget[k];
+    });
+  })();
   try {
 
     // Restore section open/closed state (with migration of old names)
