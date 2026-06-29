@@ -770,8 +770,8 @@ function updateStats() {
   var overdue=tasks.filter(t=>t.selected&&t.frist&&t.frist<today&&t.status!=='Ferdig').length;
   document.getElementById('stats-bar').innerHTML =
     '<div class="stat"><div class="stat-label">Valgte poster</div><div class="stat-value">'+sel.length+'</div><div class="stat-sub">av '+total+' totalt</div></div>'
-    +'<button onclick="cleanBudget()" style="position:absolute;right:8px;top:8px;font-size:11px;padding:4px 10px;cursor:pointer;background:#c0392b;color:#fff;border:none;border-radius:4px;font-weight:600">🧹 Rydd budsjett</button>'
-    +'<div class="stat"><div class="stat-label">Budsjetterte timer</div><div class="stat-value">'+(totalTimer>0?totalTimer:'\u2013')+'</div><div class="stat-sub">totalt (poster + grupper)</div></div>'
+    
+
     +'<div class="stat"><div class="stat-label">Fremdrift</div><div class="stat-value">'+pct+'%</div><div class="progress-wrap"><div class="progress-fill" style="width:'+pct+'%"></div></div></div>'
     +'<div class="stat"><div class="stat-label">Utl\u00f8pt frist</div><div class="stat-value" style="'+(overdue>0?'color:var(--red)':'')+'">'+overdue+'</div><div class="stat-sub">poster</div></div>';
   var selTimer=sel.reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0);
