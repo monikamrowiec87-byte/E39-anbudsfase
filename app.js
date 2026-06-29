@@ -688,7 +688,7 @@ function updateStats() {
         var groupTasks = tasks.filter(function(t){
           if(t.section!==gSec) return false;
           if((t.undersec||'')!==gUsec) return false;
-          if(gSub && (t.sub||'')!==gSub) return false;
+          if((t.sub||'')!==gSub) return false;
           return true;
         });
         var hasOwnTimer = groupTasks.some(function(t){ return (parseFloat(t.timer)||0)>0; });
