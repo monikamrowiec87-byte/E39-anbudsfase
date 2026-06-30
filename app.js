@@ -753,13 +753,8 @@ function updateStats() {
   var pct=total>0?Math.round(ferdig/total*100):0;
   var today=getToday();
   var overdue=tasks.filter(t=>t.selected&&t.frist&&t.frist<today&&t.status!=='Ferdig').length;
-  var ferdigTimer=calcFerdigTimer();
-  var timerPct=totalTimer>0?Math.round(ferdigTimer/totalTimer*100):0;
   document.getElementById('stats-bar').innerHTML =
     '<div class="stat"><div class="stat-label">Valgte poster</div><div class="stat-value">'+sel.length+'</div><div class="stat-sub">av '+total+' totalt</div></div>'
-    +(totalTimer>0
-      ? '<div class="stat"><div class="stat-label">Timebudsjett</div><div class="stat-value">'+totalTimer+'<span style="font-size:13px;font-weight:500;color:var(--text2)"> t</span></div><div class="stat-sub">'+ferdigTimer+'t ferdigstilt ('+timerPct+'%)</div></div>'
-      : '<div class="stat"><div class="stat-label">Timebudsjett</div><div class="stat-value" style="color:var(--text3)">\u2013</div><div class="stat-sub">ingen timer satt</div></div>')
     +'<div class="stat"><div class="stat-label">Fremdrift</div><div class="stat-value">'+pct+'%</div><div class="progress-wrap"><div class="progress-fill" style="width:'+pct+'%"></div></div></div>'
     +'<div class="stat"><div class="stat-label">Utl\u00f8pt frist</div><div class="stat-value" style="'+(overdue>0?'color:var(--red)':'')+'">'+overdue+'</div><div class="stat-sub">poster</div></div>';
   var selTimer=sel.reduce(function(s,t){ return s+(parseFloat(t.timer)||0); },0);
