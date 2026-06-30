@@ -359,27 +359,12 @@ function linkDeleteCurrent() {
 }
 
 function clearAll() {
-  var stored = getPin();
-  var doReset = function() {
-    if (!confirm('Nullstille alle valg, frister og statuser?')) return;
-    tasks.forEach(function(t){ t.selected=false; t.frist=''; t.timer=''; t.status='Ikke startet'; t.link=''; t.comment=''; t.ansvar=''; t.fredagstatus=''; t.eier=''; });
-    saveData(); render();
-    if (activeTab==='kanban') { if(kanbanView==='tidslinje') renderTimeline(); else renderKanban(); }
-    if (activeTab==='dashboard') renderDashboard();
-    showToast('Nullstilt');
-  };
-  if (!stored) {
-    openPinModal('set-first', null, null, null, null);
-    pinCallback = doReset;
-  } else {
-    pinBuffer=''; pinMode='verify'; window._pinCorrect=stored;
-    pinCallback = doReset;
-    updatePinDots();
-    document.getElementById('pin-error').textContent='';
-    document.getElementById('pin-title').textContent='PIN kreves';
-    document.getElementById('pin-sub').textContent='Skriv inn PIN for å nullstille listen.';
-    document.getElementById('pin-overlay').classList.add('show');
-  }
+  if (!confirm('Nullstille alle valg, frister og statuser?')) return;
+  tasks.forEach(function(t){ t.selected=false; t.frist=''; t.timer=''; t.status='Ikke startet'; t.link=''; t.comment=''; t.ansvar=''; t.fredagstatus=''; t.eier=''; });
+  saveData(); render();
+  if (activeTab==='kanban') { if(kanbanView==='tidslinje') renderTimeline(); else renderKanban(); }
+  if (activeTab==='dashboard') renderDashboard();
+  showToast('Nullstilt');
 }
 
 function showToast(msg) {
@@ -660,7 +645,7 @@ function _renderSubGroups(items, secName, hue, today, undersec) {
       html += '<div class="task-name-cell">';
       html += '<div class="name-display-wrap" id="namedisplay-'+t.id+'">';
       html += '<div class="task-name-content">'+makeName(t.name)+'</div>';
-      html += '<button class="pencil-btn" onclick="startEditName('+t.id+')" title="Rediger (PIN kreves)">&#9998;</button>';
+      html += '<button class="pencil-btn" onclick="startEditName('+t.id+')" title="Rediger">&#9998;</button>';
       html += '<button class="delete-btn" onclick="deleteTask('+t.id+')" title="Slett">\u00d7</button>';
       html += '</div>';
       html += '<div class="name-edit-wrap" id="nameedit-'+t.id+'">';
@@ -1268,12 +1253,7 @@ function getPin(){ try{ return localStorage.getItem(PIN_KEY)||null; }catch(e){ r
 function savePin(p){ try{ localStorage.setItem(PIN_KEY,p); }catch(e){} }
 
 function requestLockedEdit(id,field,wrapEl){
-  var t=tasks.find(t=>t.id===id); if(!t) return;
-  var hasVal=field==='frist'?!!t.frist:!!t.timer;
-  if(!hasVal){ openInlineEditor(id,field,wrapEl); return; }
-  var stored=getPin();
-  if(!stored) openPinModal('set-first',null,id,field,wrapEl);
-  else openPinModal('verify',stored,id,field,wrapEl);
+  openInlineEditor(id,field,wrapEl);
 }
 
 function openInlineEditor(id,field,wrapEl){
@@ -1348,10 +1328,7 @@ function changePinFlow(){
 }
 
 function startEditName(id){
-  var stored=getPin();
-  if(stored) openPinModal('verify',stored,null,null,null);
-  else openPinModal('set-first',null,null,null,null);
-  pinCallback=function(){ _doStartEditName(id); };
+  _doStartEditName(id);
 }
 function _doStartEditName(id){
   document.getElementById('namedisplay-'+id).style.display='none';
