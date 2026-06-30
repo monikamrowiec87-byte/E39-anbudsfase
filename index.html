@@ -18,7 +18,6 @@
     <span class="project-name" id="project-name" contenteditable="true" spellcheck="false" title="Klikk for å redigere" onblur="localStorage.setItem('projectName',this.textContent)" style="outline:none;cursor:text;border-bottom:1px dashed transparent;" onmouseover="this.style.borderBottomColor='var(--border2)'" onmouseout="this.style.borderBottomColor='transparent'" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">Bestillingsliste – Anbudsfase Totalentreprise</span>
     <div class="header-actions">
       <button class="sp-btn" id="sp-btn" onclick="spOpenModal()"><div class="sp-dot" id="sp-dot"></div><span id="sp-label">Delt lagring</span></button>
-      <button class="btn" onclick="clearAll()">Nullstill</button>
       <button class="btn" onclick="exportToExcel()" title="Eksporter bestillingslista til Excel">&#128202; Eksporter</button>
       <button class="btn btn-primary" onclick="saveData()">Lagre</button>
     </div>
