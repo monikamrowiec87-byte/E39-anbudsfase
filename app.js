@@ -162,16 +162,7 @@ function loadSaved() {
     }
   } catch(e) {}
   try { var _bl=localStorage.getItem('bl_budget'); if(_bl) Object.assign(undersecBudget, JSON.parse(_bl)); } catch(e) {}
-  // Deduplicate stale keys AFTER all sources merged
-  (function(){
-    var taskUndersecSet = {};
-    tasks.forEach(function(t){ taskUndersecSet[(t.section||'')+'||'+(t.undersec||'')] = true; });
-    Object.keys(undersecBudget).forEach(function(k){
-      var parts=k.split('||'), gSec=parts[0], gUsec=parts[1]||'', gSub=parts[2]||'';
-      if(gUsec==='' || gSub==='') return;
-      if(!taskUndersecSet[gSec+'||'+gUsec]) delete undersecBudget[k];
-    });
-  })();
+  // NB: budget cleanup moved to the end of loadSaved, after tasks are populated
   try {
 
     // Restore section open/closed state (with migration of old names)
@@ -246,6 +237,15 @@ function loadSaved() {
         });
       }
     }
+    // Deduplicate stale budget keys — now that tasks are fully populated.
+    // Only drops sub-group budgets whose underkapittel truly no longer exists.
+    var taskUndersecSet = {};
+    tasks.forEach(function(t){ taskUndersecSet[(t.section||'')+'||'+(t.undersec||'')] = true; });
+    Object.keys(undersecBudget).forEach(function(k){
+      var parts=k.split('||'), gSec=parts[0], gUsec=parts[1]||'', gSub=parts[2]||'';
+      if(gUsec==='' || gSub==='') return;
+      if(!taskUndersecSet[gSec+'||'+gUsec]) delete undersecBudget[k];
+    });
   } catch(e) {}
 }
 
