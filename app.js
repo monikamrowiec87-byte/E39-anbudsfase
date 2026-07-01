@@ -250,7 +250,7 @@ function loadSaved() {
 }
 
 function saveData() {
-  try { localStorage.setItem('bestillingsliste_v4', JSON.stringify({tasks, sectionOpen, undersecOpen, undersecBudget, SECTIONS_DATA, vacations, vacIdCounter, projectLinks, linkIdCounter, modelLinks, modelIdCounter, risikoEntries, muligheterEntries})); showToast('Lagret'); }
+  try { localStorage.setItem('bestillingsliste_v4', JSON.stringify({tasks, sectionOpen, undersecOpen, undersecBudget, SECTIONS_DATA, vacations, vacIdCounter, projectLinks, linkIdCounter, modelLinks, modelIdCounter, risikoEntries, muligheterEntries, bhQuestions, bhIdCounter})); showToast('Lagret'); }
   catch(e) { showToast('Kunne ikke lagre'); }
 }
 
@@ -375,7 +375,7 @@ function showToast(msg) {
 
 function switchTab(t) {
   activeTab = t;
-  ['liste','kanban','dashboard','ukeplan','ferie','risiko'].forEach(function(x) {
+  ['liste','kanban','dashboard','ukeplan','ferie','risiko','sporsmal'].forEach(function(x) {
     var te = document.getElementById('tab-'+x);
     var pe = document.getElementById('panel-'+x);
     if(te) te.classList.toggle('active', t===x);
@@ -386,6 +386,7 @@ function switchTab(t) {
   if (t==='ukeplan') renderUkeplan();
   if (t==='ferie') vacRender();
   if (t==='risiko') renderRisiko();
+  if (t==='sporsmal') renderBhq();
 }
 
 function toggleFilter(f) {
@@ -463,9 +464,10 @@ function render() {
         +' onclick="event.stopPropagation()">';
       html += '<span class="sub-grid-cell" style="min-width:0;gap:6px;display:flex;align-items:center">';
       html += '<span class="section-name" style="color:'+secColor+'"'
-        +' ondblclick="startEditSecName(this,decodeURIComponent(\''+secKey+'\'))"'
+        +' onclick="event.stopPropagation()"'
+        +' ondblclick="event.stopPropagation();startEditSecName(this,decodeURIComponent(\''+secKey+'\'))"'
         +' title="Dobbeltklikk for \u00e5 redigere">'+esc(secName)+'</span>';
-      html += '<span class="sec-edit-hint" ondblclick="startEditSecName(this.previousElementSibling,decodeURIComponent(\''+secKey+'\'))">&#9998;</span>';
+      html += '<span class="sec-edit-hint" onclick="event.stopPropagation();startEditSecName(this.previousElementSibling,decodeURIComponent(\''+secKey+'\'))" title="Rediger navn">&#9998;</span>';
       if(selCount>0) html += '<span class="sec-badge sec-sel">'+selCount+' valgt</span>';
       html += '<span class="sec-badge sec-count">'+totalInSec+'</span>';
       html += '</span>';
@@ -479,7 +481,9 @@ function render() {
           +   ' onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" />';
       }
       html += '</span>';
-      html += '<span class="sub-grid-cell sub-grid-tail" style="grid-column:7 / -1"></span>';
+      html += '<span class="sub-grid-cell sub-grid-tail" style="grid-column:7 / -1;display:flex;justify-content:flex-end">';
+      html += '<button class="sec-del-btn" onclick="event.stopPropagation();deleteSection(decodeURIComponent(\''+secKey+'\'))" title="Slett kapittel">\u00d7</button>';
+      html += '</span>';
       html += '</div>';
     } else {
     html += '<div class="section-header" style="--sec-color:'+secColor+'" onclick="toggleSection(decodeURIComponent(\''+secKey+'\'))">';
@@ -490,11 +494,13 @@ function render() {
       +' style="width:14px;height:14px;cursor:pointer;accent-color:var(--accent);flex-shrink:0;margin-right:2px"'
       +' onclick="event.stopPropagation()">';
     html += '<span class="section-name" style="color:'+secColor+'"'
-      +' ondblclick="startEditSecName(this,decodeURIComponent(\''+secKey+'\'))"'
+      +' onclick="event.stopPropagation()"'
+      +' ondblclick="event.stopPropagation();startEditSecName(this,decodeURIComponent(\''+secKey+'\'))"'
       +' title="Dobbeltklikk for \u00e5 redigere">'+esc(secName)+'</span>';
-    html += '<span class="sec-edit-hint" ondblclick="startEditSecName(this.previousElementSibling,decodeURIComponent(\''+secKey+'\'))">&#9998;</span>';
+    html += '<span class="sec-edit-hint" onclick="event.stopPropagation();startEditSecName(this.previousElementSibling,decodeURIComponent(\''+secKey+'\'))" title="Rediger navn">&#9998;</span>';
     if(selCount>0) html += '<span class="sec-badge sec-sel">'+selCount+' valgt</span>';
     html += '<span class="sec-badge sec-count">'+totalInSec+'</span>';
+    html += '<button class="sec-del-btn" onclick="event.stopPropagation();deleteSection(decodeURIComponent(\''+secKey+'\'))" title="Slett kapittel">\u00d7</button>';
     html += '</div>';
     }
 
@@ -554,7 +560,15 @@ function render() {
               +' title="Slett underkapittel">\u00d7</button>';
             html += '</span>';
             html += '</div>';
-            if(uOpen) html += '<div>'+_renderSubGroups(uVis, secName, hue, today, usec)+'</div>';
+            if(uOpen){
+              html += '<div>'+_renderSubGroups(uVis, secName, hue, today, usec)+'</div>';
+              html += '<div class="undersec-add-row">';
+              html += '<button class="sub-add-btn"'
+                +' onclick="addTask('+_jsAttr(secName)+',\'\','+_jsAttr(usec)+')">+ Legg til post</button>';
+              html += '<button class="sub-add-btn"'
+                +' onclick="addSub('+_jsAttr(secName)+','+_jsAttr(usec)+')">+ Legg til delkapittel</button>';
+              html += '</div>';
+            }
             html += '</div>';
           });
         }
@@ -566,6 +580,10 @@ function render() {
     }
     html += '</div>';
   });
+
+  html += '<button class="add-section-btn" onclick="addSection()">'
+    +'<span style="font-size:18px;line-height:1;margin-top:-1px">+</span>'
+    +' Legg til nytt kapittel</button>';
 
   document.getElementById('list-area').innerHTML = html;
 
@@ -1065,20 +1083,17 @@ function setUndersecBudget(key, field, value) {
   scheduleAutoSave();
 }
 
+// Modal is reused for three actions: add chapter, add underkapittel, add delkapittel.
 var _pendingUkSec = null;
-function addUndersec(sec) {
-  _pendingUkSec = sec;
-  var existing = [];
-  tasks.filter(function(t){return t.section===sec;}).forEach(function(t){
-    if(existing.indexOf(t.undersec)<0) existing.push(t.undersec);
-  });
-  var m = sec.match(/^\d+/);
-  var prefix = m ? m[0] : '';
-  var n = existing.length + 1;
-  var defaultName = prefix ? (prefix + '.' + n) : ('Underkapittel ' + n);
+var _pendingUkUsec = null;
+var _ukMode = 'undersec'; // 'section' | 'undersec' | 'sub'
+
+function _openUkModal(title, hint, defaultName) {
   var inp = document.getElementById('ukmodal-input');
-  inp.value = defaultName;
-  document.getElementById('ukmodal-title').textContent = 'Nytt underkapittel i \"' + sec + '\"';
+  inp.value = defaultName || '';
+  document.getElementById('ukmodal-title').textContent = title;
+  var hintEl = document.getElementById('ukmodal-hint');
+  if (hintEl) hintEl.textContent = hint;
   document.getElementById('ukmodal-overlay').style.display = 'flex';
   setTimeout(function(){ inp.focus(); inp.select(); }, 50);
   inp.onkeydown = function(e) {
@@ -1087,31 +1102,128 @@ function addUndersec(sec) {
   };
 }
 
+/* Legg til nytt kapittel (seksjon) */
+function addSection() {
+  _ukMode = 'section';
+  _pendingUkSec = null;
+  _pendingUkUsec = null;
+  // Suggest next leading number
+  var maxNum = 0;
+  Object.keys(SECTIONS_DATA).forEach(function(s){
+    var m = s.match(/^\d+/);
+    if (m && parseInt(m[0],10) > maxNum) maxNum = parseInt(m[0],10);
+  });
+  _openUkModal('Nytt kapittel',
+    'Gi kapittelet et navn. Det opprettes tomt – du legger selv til underkapitler og poster.',
+    (maxNum + 1) + ' Nytt kapittel');
+}
+
+function addUndersec(sec) {
+  _ukMode = 'undersec';
+  _pendingUkSec = sec;
+  _pendingUkUsec = null;
+  var existing = [];
+  tasks.filter(function(t){return t.section===sec;}).forEach(function(t){
+    if(existing.indexOf(t.undersec)<0) existing.push(t.undersec);
+  });
+  var m = sec.match(/^\d+/);
+  var prefix = m ? m[0] : '';
+  var n = existing.length + 1;
+  var defaultName = prefix ? (prefix + '.' + n) : ('Underkapittel ' + n);
+  _openUkModal('Nytt underkapittel i \"' + sec + '\"',
+    'Gi underkapittelet et navn. Det opprettes tomt – du legger selv til poster etterpå.',
+    defaultName);
+}
+
+/* Legg til nytt delkapittel (sub-gruppe) inne i et underkapittel */
+function addSub(sec, usec) {
+  _ukMode = 'sub';
+  _pendingUkSec = sec;
+  _pendingUkUsec = usec || '';
+  _openUkModal('Nytt delkapittel',
+    'Gi delkapittelet et navn. Det opprettes med én tom post som du kan redigere.',
+    '');
+}
+
 function ukModalConfirm() {
   var name = (document.getElementById('ukmodal-input').value || '').trim();
+
+  if (_ukMode === 'section') {
+    if (!name) { ukModalCancel(); return; }
+    if (SECTIONS_DATA[name]) { alert('Det finnes allerede et kapittel med dette navnet.'); return; }
+    SECTIONS_DATA[name] = {};          // empty chapter – no default posts
+    sectionOpen[name] = true;
+    undersecOpen[name] = {};
+    ukModalCancel();
+    scheduleAutoSave();
+    render();
+    return;
+  }
+
   var sec = _pendingUkSec;
   if (!name || !sec) { ukModalCancel(); return; }
-  // Create complete new block
-  Object.entries(SECTIONS_DATA[sec]).forEach(function(e) {
-    var sub=e[0], items=e[1];
-    items.forEach(function(item) {
-      tasks.push({
-        id:idCounter++, excelId:item.id,
-        section:sec, undersec:name, sub:sub, name:item.name,
-        selected:false, frist:'', timer:'', status:'Ikke startet', link:'', comment:''
-      });
+
+  if (_ukMode === 'sub') {
+    // Add a new delkapittel (sub-group) with a single blank post
+    var us = _pendingUkUsec || '';
+    tasks.push({
+      id: idCounter++, excelId: '',
+      section: sec, undersec: us, sub: name, name: 'Ny post',
+      selected: false, frist: '', timer: '', status: 'Ikke startet', link: '', comment: '', eier: '', ansvar: '', fredagstatus: ''
     });
+    var newSubId = tasks[tasks.length-1].id;
+    ukModalCancel();
+    scheduleAutoSave();
+    render();
+    setTimeout(function(){ startEditName(newSubId); }, 50);
+    return;
+  }
+
+  // _ukMode === 'undersec' — create an EMPTY underkapittel (no copied tasks).
+  // Seed it with one blank post so it is visible and ready to edit.
+  tasks.push({
+    id: idCounter++, excelId: '',
+    section: sec, undersec: name, sub: '', name: 'Ny post',
+    selected: false, frist: '', timer: '', status: 'Ikke startet', link: '', comment: '', eier: '', ansvar: '', fredagstatus: ''
   });
+  var newTaskId = tasks[tasks.length-1].id;
   if(!undersecOpen[sec]) undersecOpen[sec] = {};
   undersecOpen[sec][name] = true;
   ukModalCancel();
   scheduleAutoSave();
   render();
+  setTimeout(function(){ startEditName(newTaskId); }, 50);
 }
 
 function ukModalCancel() {
   document.getElementById('ukmodal-overlay').style.display = 'none';
   _pendingUkSec = null;
+  _pendingUkUsec = null;
+  _ukMode = 'undersec';
+}
+
+function deleteSection(sec) {
+  if (!sec || !SECTIONS_DATA[sec]) return;
+  var count = tasks.filter(function(t){ return t.section === sec; }).length;
+  var msg = count > 0
+    ? 'Slette kapittelet "' + sec + '" og alle ' + count + ' poster under? Dette kan ikke angres.'
+    : 'Slette det tomme kapittelet "' + sec + '"?';
+  if (!confirm(msg)) return;
+
+  // Remove all tasks in the section
+  tasks = tasks.filter(function(t){ return t.section !== sec; });
+  // Remove structure + UI state
+  delete SECTIONS_DATA[sec];
+  delete sectionOpen[sec];
+  delete undersecOpen[sec];
+  // Clean up any budget keys belonging to this section (keys look like "sec||usec||sub")
+  Object.keys(undersecBudget).forEach(function(k){
+    if (k.split('||')[0] === sec) delete undersecBudget[k];
+  });
+  try { localStorage.setItem('bl_budget', JSON.stringify(undersecBudget)); } catch(e) {}
+
+  scheduleAutoSave();
+  render();
 }
 
 function deleteUndersec(sec, usec) {
@@ -1568,6 +1680,7 @@ function vacRender() {
   vacRenderStats();
   vacRenderTimeline();
   vacRenderList();
+  vacApplyNameWidth();
   // Prefill name field with last-used name on this device
   var nameField = document.getElementById('vac-name');
   if (nameField && !nameField.value) {
@@ -1575,8 +1688,65 @@ function vacRender() {
   }
 }
 
+// Adjustable width for the "Navn" column (stored per device)
+function _vacMeasureText(text, font) {
+  var c = _vacMeasureText._c || (_vacMeasureText._c = document.createElement('canvas'));
+  var ctx = c.getContext('2d');
+  ctx.font = font;
+  return ctx.measureText(text || '').width;
+}
+
+function vacApplyNameWidth() {
+  var th = document.querySelector('.vac-table th.vac-col-name');
+  if (!th) return;
+  var saved = null;
+  try { saved = localStorage.getItem('vac_name_col_w'); } catch(e) {}
+  var w;
+  if (saved) {
+    w = parseInt(saved, 10) || 170;
+  } else {
+    // No manual width chosen — auto-fit to the longest registered name
+    var fam = (getComputedStyle(document.body).fontFamily || 'sans-serif');
+    var font = '600 13.8px ' + fam;
+    var maxW = _vacMeasureText('Navn', font);
+    vacations.forEach(function(v){ var m = _vacMeasureText(v.name || '', font); if (m > maxW) maxW = m; });
+    // dot + gap + input padding + cell padding + slack
+    w = Math.round(maxW + 10 + 8 + 14 + 24 + 14);
+  }
+  w = Math.max(120, Math.min(600, w));
+  th.style.width = w + 'px';
+}
+
+function vacResetNameWidth() {
+  try { localStorage.removeItem('vac_name_col_w'); } catch(e) {}
+  vacApplyNameWidth();
+}
+
+function vacStartResize(e) {
+  e.preventDefault(); e.stopPropagation();
+  var th = e.target.closest('th');
+  if (!th) return;
+  var startX = e.clientX;
+  var startW = th.getBoundingClientRect().width;
+  document.body.style.cursor = 'col-resize';
+  document.body.style.userSelect = 'none';
+  function move(ev) {
+    var w = Math.max(120, Math.min(600, startW + (ev.clientX - startX)));
+    th.style.width = w + 'px';
+  }
+  function up() {
+    document.removeEventListener('mousemove', move);
+    document.removeEventListener('mouseup', up);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    try { localStorage.setItem('vac_name_col_w', String(parseInt(th.style.width, 10) || 170)); } catch(e) {}
+  }
+  document.addEventListener('mousemove', move);
+  document.addEventListener('mouseup', up);
+}
+
 var autoSaveTimer;
-function scheduleAutoSave(){ clearTimeout(autoSaveTimer); autoSaveTimer=setTimeout(function(){ try{ localStorage.setItem('bestillingsliste_v4',JSON.stringify({tasks:tasks,sectionOpen:sectionOpen,undersecOpen:undersecOpen,undersecBudget:undersecBudget,SECTIONS_DATA:SECTIONS_DATA,vacations:vacations,vacIdCounter:vacIdCounter,projectLinks:projectLinks,linkIdCounter:linkIdCounter,modelLinks:modelLinks,modelIdCounter:modelIdCounter,risikoEntries:risikoEntries,muligheterEntries:muligheterEntries})); }catch(e){} },1200); }
+function scheduleAutoSave(){ clearTimeout(autoSaveTimer); autoSaveTimer=setTimeout(function(){ try{ localStorage.setItem('bestillingsliste_v4',JSON.stringify({tasks:tasks,sectionOpen:sectionOpen,undersecOpen:undersecOpen,undersecBudget:undersecBudget,SECTIONS_DATA:SECTIONS_DATA,vacations:vacations,vacIdCounter:vacIdCounter,projectLinks:projectLinks,linkIdCounter:linkIdCounter,modelLinks:modelLinks,modelIdCounter:modelIdCounter,risikoEntries:risikoEntries,muligheterEntries:muligheterEntries,bhQuestions:bhQuestions,bhIdCounter:bhIdCounter})); }catch(e){} },1200); }
 var _change=change;
 window.change=function(id,field,val){ _change(id,field,val); scheduleAutoSave(); };
 var _toggleSelect=toggleSelect;
@@ -1592,6 +1762,14 @@ var spCfg              = null;
 var spTimer            = null;
 var spLastVer          = 0;
 var spLastHash         = "";
+// True when there are local changes not yet confirmed uploaded to shared storage.
+// Persisted so a page refresh does not let the server overwrite unsynced local edits.
+var _spDirty           = false;
+try { _spDirty = localStorage.getItem('bl_sp_dirty') === '1'; } catch(e) {}
+function _spSetDirty(v) {
+  _spDirty = v;
+  try { if (v) localStorage.setItem('bl_sp_dirty','1'); else localStorage.removeItem('bl_sp_dirty'); } catch(e) {}
+}
 
 
 
@@ -1661,6 +1839,7 @@ function spConnect() {
   var interval = parseInt(document.getElementById('sp-interval').value) || 20;
   if (!apiKey) { spSetStatus('Fyll inn API Key.', 'err'); return; }
   spCfg = { binId: binId, apiKey: apiKey, interval: interval };
+  _spSetDirty(false); // explicit connect: use server as baseline
   try { localStorage.setItem(SP_CFG_KEY, JSON.stringify({interval: interval})); } catch(e) {}
   try { localStorage.setItem(SP_API_KEY_KEY, apiKey); localStorage.setItem(SP_API_KEY_TS_KEY, Date.now().toString()); } catch(e) {}
   spSetConnected(true);
@@ -1725,6 +1904,7 @@ async function spPush() {
       SECTIONS_DATA: SECTIONS_DATA, vacations: vacations, vacIdCounter: vacIdCounter,
       projectLinks: projectLinks, linkIdCounter: linkIdCounter,
       modelLinks: modelLinks, modelIdCounter: modelIdCounter,
+      bhQuestions: bhQuestions, bhIdCounter: bhIdCounter,
       ts: ts
     };
     var r = await fetch(spUrl(), {
@@ -1740,6 +1920,7 @@ async function spPush() {
     spLastVer = (data.metadata || {}).version || spLastVer + 1;
     // Update hash so next pull doesn't re-merge our own data
     spLastHash = ts + '_' + tasks.length + '_' + vacations.length;
+    _spSetDirty(false);
     spSetDot('ok');
     spSetStatus('✓ Lastet opp ' + spTime(), 'ok');
   } catch(e) {
@@ -1762,6 +1943,13 @@ async function spPull() {
     if (!data.record) {
       spSetDot('err');
       spSetStatus('Tom respons fra server', 'err');
+      return;
+    }
+    // If we have local changes that haven't been confirmed uploaded, push them up
+    // now instead of letting the server overwrite them. This protects deletions,
+    // edits and column data (e.g. Ansvar) from being reverted on refresh/poll.
+    if (_spDirty) {
+      await spPush();
       return;
     }
     // Compare by timestamp + content size (more reliable than version)
@@ -1804,7 +1992,10 @@ function spMerge(remote) {
       timer: s.timer || '',
       status: s.status || 'Ikke startet',
       link: s.link || '',
-      comment: s.comment || ''
+      comment: s.comment || '',
+      ansvar: s.ansvar || '',
+      eier: s.eier || '',
+      fredagstatus: s.fredagstatus || ''
     };
   });
 
@@ -1845,6 +2036,12 @@ function spMerge(remote) {
     modelIdCounter = remote.modelIdCounter || (Math.max.apply(null, [0].concat(modelLinks.map(function(l){return l.id||0;}))) + 1);
   }
 
+  // Restore questions to byggherre
+  if (remote.bhQuestions) {
+    bhQuestions = remote.bhQuestions;
+    bhIdCounter = remote.bhIdCounter || (bhQuestions.reduce(function(m,q){ return Math.max(m, q.id||0); }, 0) + 1);
+  }
+
   // Persist locally and re-render
   try {
     localStorage.setItem('bestillingsliste_v4', JSON.stringify({
@@ -1852,7 +2049,8 @@ function spMerge(remote) {
       undersecBudget: undersecBudget,
       SECTIONS_DATA: SECTIONS_DATA, vacations: vacations, vacIdCounter: vacIdCounter,
       projectLinks: projectLinks, linkIdCounter: linkIdCounter,
-      modelLinks: modelLinks, modelIdCounter: modelIdCounter
+      modelLinks: modelLinks, modelIdCounter: modelIdCounter,
+      bhQuestions: bhQuestions, bhIdCounter: bhIdCounter
     }));
   } catch(e) {}
   render();
@@ -1861,6 +2059,7 @@ function spMerge(remote) {
   if (activeTab === 'ferie') vacRender();
   if (activeTab === 'dashboard') renderDashboard();
   if (activeTab === 'ukeplan') renderUkeplan();
+  if (activeTab === 'sporsmal') renderBhq();
 }
 
 
@@ -1875,6 +2074,7 @@ var _origScheduleAutoSave = scheduleAutoSave;
 scheduleAutoSave = function() {
   _origScheduleAutoSave();
   if (spCfg) {
+    _spSetDirty(true);
     clearTimeout(window._spDebounce);
     window._spDebounce = setTimeout(spPush, 2000);
   }
@@ -1969,6 +2169,9 @@ var risikoIdCounter = 100;
 function loadRisikoFromSaved(data) {
   if (data.risikoEntries) risikoEntries = data.risikoEntries;
   if (data.muligheterEntries) muligheterEntries = data.muligheterEntries;
+  if (data.bhQuestions) bhQuestions = data.bhQuestions;
+  if (data.bhIdCounter) bhIdCounter = data.bhIdCounter;
+  else bhIdCounter = (bhQuestions.reduce(function(m,q){ return Math.max(m, q.id||0); }, 0) + 1);
 }
 
 function switchRisikoView(v) {
@@ -2129,6 +2332,61 @@ function risikoAdd(type){
   // scroll to new row
   var el = document.getElementById(type==='risiko'?'risiko-list':'mulighet-list');
   if(el) el.lastElementChild && el.lastElementChild.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+/* ── Spørsmål til byggherre ────────────────────────────────── */
+var bhQuestions = [];       // [{id, tema, sentDate, svar}]
+var bhIdCounter = 1;
+
+function renderBhq() {
+  var tbody = document.getElementById('bhq-tbody');
+  if (!tbody) return;
+  var info = document.getElementById('bhq-info');
+  if (info) info.textContent = bhQuestions.length
+    ? (bhQuestions.length + (bhQuestions.length===1 ? ' spørsmål registrert' : ' spørsmål registrert'))
+    : 'Ingen spørsmål registrert ennå.';
+
+  if (bhQuestions.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="bhq-empty">Ingen spørsmål ennå. Klikk «+ Legg til spørsmål» for å starte.</td></tr>';
+    return;
+  }
+
+  var html = '';
+  bhQuestions.forEach(function(q, i) {
+    html += '<tr>';
+    html += '<td class="bhq-nr">' + (i+1) + '</td>';
+    html += '<td><textarea class="bhq-ta" placeholder="Hva gjelder spørsmålet?" onchange="bhqChange('+q.id+',\'tema\',this.value)">' + esc(q.tema) + '</textarea></td>';
+    html += '<td><input type="date" class="bhq-date" value="' + esc(q.sentDate) + '" onchange="bhqChange('+q.id+',\'sentDate\',this.value)"></td>';
+    html += '<td><textarea class="bhq-ta" placeholder="Svar fra byggherre …" onchange="bhqChange('+q.id+',\'svar\',this.value)">' + esc(q.svar) + '</textarea></td>';
+    html += '<td class="bhq-actions"><button class="bhq-del-btn" title="Slett spørsmål" onclick="bhqDelete('+q.id+')">\u2715</button></td>';
+    html += '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+function bhqAdd() {
+  bhQuestions.push({ id: bhIdCounter++, tema:'', sentDate:'', svar:'' });
+  scheduleAutoSave();
+  renderBhq();
+  // Focus the new row's tema field
+  var tbody = document.getElementById('bhq-tbody');
+  if (tbody && tbody.lastElementChild) {
+    var ta = tbody.lastElementChild.querySelector('textarea');
+    if (ta) { ta.focus(); tbody.lastElementChild.scrollIntoView({behavior:'smooth',block:'center'}); }
+  }
+}
+
+function bhqChange(id, field, val) {
+  var q = bhQuestions.find(function(x){ return x.id===id; });
+  if (q) q[field] = val;
+  scheduleAutoSave();
+}
+
+function bhqDelete(id) {
+  if (!confirm('Slette dette spørsmålet?')) return;
+  bhQuestions = bhQuestions.filter(function(q){ return q.id!==id; });
+  scheduleAutoSave();
+  renderBhq();
 }
 
 // Hook into loadSaved

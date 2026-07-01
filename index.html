@@ -31,6 +31,7 @@
     <button class="tab" id="tab-dashboard" onclick="switchTab('dashboard')">Dashboard</button>
     <button class="tab" id="tab-ukeplan" onclick="switchTab('ukeplan')">Ukeplan</button>
     <button class="tab" id="tab-ferie" onclick="switchTab('ferie')">Feriekalender</button>
+    <button class="tab" id="tab-sporsmal" onclick="switchTab('sporsmal')">Spørsmål til byggherre</button>
     
   </div>
 </header>
@@ -132,7 +133,7 @@
       <table class="vac-table">
         <thead>
           <tr>
-            <th class="vac-col-name">Navn</th>
+            <th class="vac-col-name">Navn<span class="vac-resize" onmousedown="vacStartResize(event)" ondblclick="vacResetNameWidth()" title="Dra for å endre bredde · dobbeltklikk for å tilpasse"></span></th>
             <th class="vac-col-date">Fra</th>
             <th class="vac-col-date">Til</th>
             <th class="vac-col-days">Dager</th>
@@ -141,6 +142,27 @@
           </tr>
         </thead>
         <tbody id="vac-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="panel-sporsmal" style="display:none">
+    <div class="bhq-toolbar">
+      <span class="bhq-info" id="bhq-info"></span>
+      <button class="bhq-add-btn" onclick="bhqAdd()">+ Legg til spørsmål</button>
+    </div>
+    <div class="bhq-table-wrap">
+      <table class="bhq-table">
+        <thead>
+          <tr>
+            <th class="bhq-col-nr">Nr</th>
+            <th class="bhq-col-tema">Tema</th>
+            <th class="bhq-col-date">Sendt dato</th>
+            <th class="bhq-col-svar">Svar</th>
+            <th class="bhq-col-actions"></th>
+          </tr>
+        </thead>
+        <tbody id="bhq-tbody"></tbody>
       </table>
     </div>
   </div>
@@ -220,7 +242,7 @@
 <div id="ukmodal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:800;align-items:center;justify-content:center">
   <div style="background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius);padding:28px 32px;width:380px;max-width:95vw;box-shadow:0 16px 48px rgba(0,0,0,.25)">
     <h2 id="ukmodal-title" style="font-size:15px;font-weight:700;color:var(--text);margin:0 0 6px">Nytt underkapittel</h2>
-    <p style="font-size:12px;color:var(--text2);line-height:1.5;margin:0 0 16px">Gi underkapittelet et navn. Alle delkapitler og oppgaver fra kapitlet kopieres inn.</p>
+    <p id="ukmodal-hint" style="font-size:12px;color:var(--text2);line-height:1.5;margin:0 0 16px">Gi underkapittelet et navn. Det opprettes tomt – du legger selv til poster etterpå.</p>
     <input id="ukmodal-input" type="text" placeholder="f.eks. 2.1 Eigårastunnel" style="width:100%;box-sizing:border-box;font-size:13px;padding:9px 11px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);outline:none;font-family:inherit;margin-bottom:16px">
     <div style="display:flex;gap:8px">
       <button class="btn btn-primary" onclick="ukModalConfirm()" style="flex:1">Legg til</button>
