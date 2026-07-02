@@ -2076,7 +2076,7 @@ window.scheduleAutoSave = scheduleAutoSave;
 // One-time reset: when the underlying seed Excel changes, wipe the OLD task list
 // from saved state (keeping ferier, lenker og byggherre-spørsmål) and reload from
 // the new SEED_TASKS. Bump SEED_VERSION whenever the source Excel is replaced.
-const SEED_VERSION = 'excel-2026-07-01';
+const SEED_VERSION = 'excel-2026-07-01b';
 var _seedReset = false;
 try {
   if (localStorage.getItem('bl_seed_version') !== SEED_VERSION) {
@@ -2092,6 +2092,11 @@ try {
     } catch(e) {}
     try { localStorage.removeItem('bl_budget'); } catch(e) {}
     localStorage.setItem('bl_seed_version', SEED_VERSION);
+    // If Delt lagring is connected, the shared bin still holds the OLD list and
+    // would overwrite this reset on the next pull. Mark local state dirty so the
+    // first pull pushes the NEW seeded list up to the bin instead — this makes the
+    // new base list propagate to every connected client.
+    try { _spSetDirty(true); } catch(e) { try { localStorage.setItem('bl_sp_dirty','1'); } catch(e2) {} }
   }
 } catch(e) {}
 
