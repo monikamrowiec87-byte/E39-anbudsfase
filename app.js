@@ -2077,6 +2077,9 @@ window.scheduleAutoSave = scheduleAutoSave;
 // from saved state (keeping ferier, lenker og byggherre-spørsmål) and reload from
 // the new SEED_TASKS. Bump SEED_VERSION whenever the source Excel is replaced.
 const SEED_VERSION = 'excel-2026-07-01b';
+const VAC_SEED_VERSION = 'ferie-sommer-2026-v1';
+// Sommerferie 2026 fra ferielista (E39_BL_Ferieliste_sommer). Legges inn én gang.
+const SEED_VACATIONS = [{"name": "Anniken Nohr", "from": "2026-06-29", "to": "2026-07-26", "note": ""}, {"name": "Asbjørn Gjerding-Smith", "from": "2026-06-29", "to": "2026-08-02", "note": ""}, {"name": "Elin Dale", "from": "2026-07-06", "to": "2026-08-09", "note": ""}, {"name": "Geir Dehli", "from": "2026-06-29", "to": "2026-06-30", "note": "Fri 29.+30. juni"}, {"name": "Geir Dehli", "from": "2026-07-06", "to": "2026-08-02", "note": ""}, {"name": "Inga Greipsland", "from": "2026-07-06", "to": "2026-08-02", "note": ""}, {"name": "Inge Gunnes", "from": "2026-07-06", "to": "2026-08-02", "note": ""}, {"name": "Jens Beckstrøm", "from": "2026-07-06", "to": "2026-08-02", "note": ""}, {"name": "Julia Hafnor", "from": "2026-06-22", "to": "2026-06-28", "note": ""}, {"name": "Julia Hafnor", "from": "2026-07-13", "to": "2026-08-09", "note": ""}, {"name": "Kjetil Kildal", "from": "2026-07-06", "to": "2026-08-09", "note": ""}, {"name": "Marius Sekse", "from": "2026-06-29", "to": "2026-06-29", "note": "Fri 29. juni"}, {"name": "Marius Sekse", "from": "2026-07-06", "to": "2026-08-02", "note": ""}, {"name": "Markus Sandnes", "from": "2026-07-06", "to": "2026-07-26", "note": ""}, {"name": "Markus Sandnes", "from": "2026-07-27", "to": "2026-08-02", "note": "Noe fri (deler av uke 31)"}, {"name": "Rune Berentsen", "from": "2026-07-20", "to": "2026-08-09", "note": ""}, {"name": "Rune Blågestad", "from": "2026-06-29", "to": "2026-08-09", "note": ""}, {"name": "Sturla K. Rambjør", "from": "2026-06-22", "to": "2026-06-28", "note": ""}, {"name": "Sturla K. Rambjør", "from": "2026-07-10", "to": "2026-07-10", "note": "Fri 10. juli"}, {"name": "Sturla K. Rambjør", "from": "2026-07-13", "to": "2026-08-02", "note": ""}, {"name": "Trine Hollerud Odden", "from": "2026-06-29", "to": "2026-07-26", "note": ""}, {"name": "Øystein Gakkestad", "from": "2026-07-06", "to": "2026-08-02", "note": ""}, {"name": "Øyvind Bakken", "from": "2026-07-06", "to": "2026-08-02", "note": ""}];
 var _seedReset = false;
 try {
   if (localStorage.getItem('bl_seed_version') !== SEED_VERSION) {
@@ -2111,8 +2114,28 @@ window.addEventListener('DOMContentLoaded', function () {
     initTasks();
   }
   loadSaved();
-  if (_seedReset) {
-    // Persist the freshly seeded list so future reloads keep it.
+
+  // One-time: seed summer vacations from the ferie-Excel (dedup by name+from+to).
+  var _vacSeeded = false;
+  try {
+    if (localStorage.getItem('bl_vac_seed_version') !== VAC_SEED_VERSION) {
+      var _vseen = {};
+      vacations.forEach(function(v){ _vseen[(v.name||'')+'|'+(v.from||'')+'|'+(v.to||'')] = true; });
+      SEED_VACATIONS.forEach(function(v){
+        var k = (v.name||'')+'|'+(v.from||'')+'|'+(v.to||'');
+        if (!_vseen[k]) {
+          vacations.push({ id: vacIdCounter++, name: v.name, from: v.from, to: v.to, note: v.note || '' });
+          _vseen[k] = true;
+        }
+      });
+      localStorage.setItem('bl_vac_seed_version', VAC_SEED_VERSION);
+      _vacSeeded = true;
+      try { _spSetDirty(true); } catch(e) {}
+    }
+  } catch(e) {}
+
+  if (_seedReset || _vacSeeded) {
+    // Persist the freshly seeded list/ferier so future reloads keep them.
     try {
       localStorage.setItem('bestillingsliste_v4', JSON.stringify({tasks, sectionOpen, undersecOpen, undersecBudget, SECTIONS_DATA, vacations, vacIdCounter, projectLinks, linkIdCounter, modelLinks, modelIdCounter, risikoEntries, muligheterEntries, bhQuestions, bhIdCounter}));
     } catch(e) {}
