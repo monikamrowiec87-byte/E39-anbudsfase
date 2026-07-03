@@ -1748,7 +1748,7 @@ window.toggleSelect=function(id){ _toggleSelect(id); scheduleAutoSave(); };
 var SP_CFG_KEY         = 'bl_jb_cfg_v1';
 var SP_API_KEY_KEY     = 'bl_jb_api_v1';
 var SP_API_KEY_TS_KEY  = 'bl_jb_api_ts_v1';
-var SP_API_KEY_TTL_MS  = 16 * 60 * 60 * 1000;  // 16 hours
+var SP_API_KEY_TTL_MS  = 8 * 60 * 60 * 1000;   // 8 hours – deretter må API Key legges inn på nytt
 var spCfg              = null;
 var spTimer            = null;
 var spLastVer          = 0;
@@ -1761,6 +1761,88 @@ function _spSetDirty(v) {
   _spDirty = v;
   try { if (v) localStorage.setItem('bl_sp_dirty','1'); else localStorage.removeItem('bl_sp_dirty'); } catch(e) {}
 }
+
+/* ════════ Tilgangslås (API Key kreves for å se innhold) ════════
+   Uten en gyldig, ikke-utløpt API Key vises ingen data. Den lokale
+   kopien av innholdet fjernes fra nettleseren når den er låst, slik at
+   ingen kan lese den uten å skrive inn nøkkelen på nytt. Nøkkelen varer
+   i 8 timer (SP_API_KEY_TTL_MS) og må deretter legges inn igjen.        */
+
+var BL_BIN_ID = "6a23213ada38895dfe8df485";  // samme delte bin som resten av appen
+
+// Har vi en lagret nøkkel som ikke er eldre enn 8 timer?
+function spHasValidKey() {
+  try {
+    var k  = localStorage.getItem(SP_API_KEY_KEY);
+    var ts = localStorage.getItem(SP_API_KEY_TS_KEY);
+    if (!k || !ts) return false;
+    if (Date.now() - parseInt(ts, 10) >= SP_API_KEY_TTL_MS) return false;
+    return true;
+  } catch(e) { return false; }
+}
+
+// Fjern all lokal, sensitiv innholds-cache fra nettleseren.
+function blClearSensitiveCache() {
+  try { localStorage.removeItem('bestillingsliste_v4'); } catch(e) {}
+  try { localStorage.removeItem('bl_budget'); } catch(e) {}
+  try { localStorage.removeItem('bl_sp_dirty'); } catch(e) {}
+}
+
+// Lås appen: skjul alt innhold, tøm cache, stopp synk og be om nøkkel.
+function blLock(reason) {
+  try { spStopPolling(); } catch(e) {}
+  spCfg = null;                 // slett nøkkelen fra minnet også
+  try { localStorage.removeItem(SP_API_KEY_KEY); localStorage.removeItem(SP_API_KEY_TS_KEY); } catch(e) {}
+  blClearSensitiveCache();
+  document.body.classList.add('bl-locked');
+  var ov = document.getElementById('bl-lock-overlay');
+  if (ov) ov.style.display = 'flex';
+  var st = document.getElementById('bl-lock-status');
+  if (st) { st.textContent = reason || 'Skriv inn API Key for å se innholdet.'; st.className = 'sp-status'; }
+  var inp = document.getElementById('bl-lock-key');
+  if (inp) { inp.value = ''; setTimeout(function(){ try { inp.focus(); } catch(e) {} }, 60); }
+  try { document.getElementById('sp-overlay').classList.remove('show'); } catch(e) {}
+}
+
+// Lås opp visuelt (kalles etter at nøkkelen er verifisert og siden lastes).
+function blUnlock() {
+  document.body.classList.remove('bl-locked');
+  var ov = document.getElementById('bl-lock-overlay');
+  if (ov) ov.style.display = 'none';
+}
+
+// Fra låseskjermen: verifiser nøkkelen mot serveren før tilgang gis.
+function blSubmitKey() {
+  var inp = document.getElementById('bl-lock-key');
+  var st  = document.getElementById('bl-lock-status');
+  var key = (inp && inp.value || '').trim();
+  if (!key) { if (st) { st.textContent = 'Skriv inn API Key.'; st.className = 'sp-status err'; } return; }
+  if (st) { st.textContent = 'Kobler til…'; st.className = 'sp-status'; }
+  var btn = document.getElementById('bl-lock-btn');
+  if (btn) btn.disabled = true;
+  fetch('https://api.jsonbin.io/v3/b/' + BL_BIN_ID + '/latest?_=' + Date.now(), {
+    headers: { 'X-Master-Key': key, 'Content-Type': 'application/json' },
+    cache: 'no-store'
+  }).then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }).then(function() {
+    // Riktig nøkkel: lagre med nytt tidsstempel (8 t) og last siden på nytt,
+    // slik at den vanlige innlastingen henter dataene fra den delte lagringen.
+    try {
+      localStorage.setItem(SP_API_KEY_KEY, key);
+      localStorage.setItem(SP_API_KEY_TS_KEY, Date.now().toString());
+      localStorage.removeItem('bl_sp_dirty');
+    } catch(e) {}
+    if (st) { st.textContent = '✓ Låst opp – laster innhold…'; st.className = 'sp-status ok'; }
+    location.reload();
+  }).catch(function(e) {
+    if (btn) btn.disabled = false;
+    if (st) { st.textContent = 'Feil API Key eller nettverksfeil (' + e.message + ').'; st.className = 'sp-status err'; }
+  });
+}
+window.blSubmitKey = blSubmitKey;
+window.blLock = blLock;
 
 
 
@@ -1847,6 +1929,8 @@ function spDisconnect() {
   spSetConnected(false);
   spSetDot('');
   spSetStatus('Frakoblet. Fyll inn ny konfigurasjon for å koble til igjen.', '');
+  // Uten nøkkel skal ingenting være synlig lenger – lås appen.
+  blLock('Frakoblet. Skriv inn API Key for å se innholdet igjen.');
 }
 
 function spSetConnected(on) {
@@ -2063,6 +2147,9 @@ function spCloseModal() { document.getElementById('sp-overlay').classList.remove
 // Override scheduleAutoSave to also push to SharePoint when configured
 var _origScheduleAutoSave = scheduleAutoSave;
 scheduleAutoSave = function() {
+  // Ikke lagre noe mens appen er låst (f.eks. tasting i låse-feltet skal
+  // ikke skrive innhold til nettleseren).
+  if (document.body.classList.contains('bl-locked')) return;
   _origScheduleAutoSave();
   if (spCfg) {
     _spSetDirty(true);
@@ -2108,6 +2195,15 @@ try { _hasSaved = !!localStorage.getItem('bestillingsliste_v4'); } catch(e) {}
 
 
 window.addEventListener('DOMContentLoaded', function () {
+  // ── Tilgangslås ──────────────────────────────────────────────
+  // Uten en gyldig API Key (maks 8 t gammel) vises ingenting.
+  // Vi laster ikke inn og tegner ikke sensitive data i det hele tatt.
+  if (!spHasValidKey()) {
+    blLock('Skriv inn API Key for å se innholdet.');
+    return;
+  }
+  blUnlock();
+
   if (_hasSaved && !_seedReset) {
     initTasksFromSaved();
   } else {
@@ -2164,6 +2260,15 @@ window.addEventListener('DOMContentLoaded', function () {
 
 
 
+
+
+// Lås appen automatisk når 8-timers-vinduet er utløpt, selv om fanen
+// står åpen. Sjekker hvert minutt.
+setInterval(function () {
+  if (!document.body.classList.contains('bl-locked') && !spHasValidKey()) {
+    blLock('API Key utløpt (8 timer). Skriv inn på nytt for å fortsette.');
+  }
+}, 60 * 1000);
 
 
 // sørg for at lagring skjer etter endring

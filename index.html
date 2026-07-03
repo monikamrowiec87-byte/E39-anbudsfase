@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="styles.css">
 <script src="exceljs.min.js"></script>
 </head>
-<body>
+<body class="bl-locked">
 
 <header class="header">
   <div class="header-top">
@@ -246,6 +246,21 @@
       <button class="btn btn-primary" onclick="ukModalConfirm()" style="flex:1">Legg til</button>
       <button class="btn" onclick="ukModalCancel()" style="flex:1">Avbryt</button>
     </div>
+  </div>
+</div>
+
+<div class="bl-lock-overlay" id="bl-lock-overlay" style="display:none">
+  <div class="bl-lock-modal">
+    <div class="bl-lock-icon">&#128274;</div>
+    <h2>Innholdet er l&aring;st</h2>
+    <p>Skriv inn API Key for &aring; se bestillingslista. N&oslash;kkelen huskes i 8 timer &ndash; deretter m&aring; den legges inn p&aring; nytt. Uten gyldig n&oslash;kkel vises ingen data.</p>
+    <div class="sp-field">
+      <label>API Key</label>
+      <input id="bl-lock-key" type="password" placeholder="Skriv inn API Key" autocomplete="off"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();blSubmitKey();}">
+    </div>
+    <div class="sp-status" id="bl-lock-status">Skriv inn API Key for &aring; se innholdet.</div>
+    <button class="btn btn-primary" id="bl-lock-btn" style="width:100%" onclick="blSubmitKey()">L&aring;s opp</button>
   </div>
 </div>
 

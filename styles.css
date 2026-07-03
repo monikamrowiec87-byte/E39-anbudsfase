@@ -1450,3 +1450,35 @@
 .bhq-del-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px 6px;border-radius:5px;transition:color .12s,background .12s;}
 .bhq-del-btn:hover{color:var(--red);background:var(--red-bg);}
 .bhq-empty{text-align:center;color:var(--text3);font-size:13px;padding:28px 12px !important;}
+
+  /* ── Tilgangslås (krever API Key for å se innhold) ─────────────── */
+  .bl-lock-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 3000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  .bl-lock-modal {
+    background: var(--surface);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 34px 34px 30px;
+    width: 420px;
+    max-width: 95vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,.28);
+    text-align: center;
+  }
+  .bl-lock-modal .bl-lock-icon { font-size: 40px; line-height: 1; margin-bottom: 12px; }
+  .bl-lock-modal h2 { font-size: 17px; font-weight: 700; color: var(--text); margin: 0 0 8px; }
+  .bl-lock-modal p  { font-size: 13px; color: var(--text2); line-height: 1.6; margin: 0 0 20px; }
+  .bl-lock-modal .sp-field { text-align: left; margin-bottom: 14px; }
+  .bl-lock-modal .sp-status { text-align: left; margin-bottom: 16px; }
+  .bl-lock-modal .btn { font-size: 14px; padding: 10px 16px; }
+  /* Skjul alt innhold når appen er låst (i tilfelle overlegget lukkes). */
+  body.bl-locked .header,
+  body.bl-locked .main { visibility: hidden; }
