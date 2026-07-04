@@ -46,6 +46,13 @@ let undersecOpen = {};
 let undersecBudget = {}; // {key: {timer, revidert, revisjonsDato}}
 let vacations = [];
 let vacIdCounter = 1;
+// Tombstones for deleted tasks: { id: deletedAtTimestamp }. Lets deletions
+// propagate through shared storage instead of a deleted post reappearing on the
+// next sync. Pruned to the last 30 days on save so it can't grow unbounded.
+let deletedTasks = {};
+// Mark a task (or tasks) as locally edited so per-task last-write-wins merge can
+// pick the newest version. Stamped at every mutation entry point.
+function _touchTask(id){ var t = tasks.find(function(x){ return x.id === id; }); if (t) t._uAt = Date.now(); }
 
 // Old section names → current names. Applied consistently to SECTIONS_DATA keys,
 // task.section values, sectionOpen keys, undersecOpen keys, and undersecBudget keys
@@ -170,6 +177,11 @@ function loadSaved() {
       vacIdCounter = data.vacIdCounter || (Math.max.apply(null, [0].concat(vacations.map(function(v){return v.id||0;}))) + 1);
     }
 
+    // Restore delete-tombstones
+    if (data.deletedTasks && typeof data.deletedTasks === 'object') {
+      deletedTasks = data.deletedTasks;
+    }
+
     // Restore document links
     if (data.projectLinks) {
       projectLinks = data.projectLinks;
@@ -196,7 +208,8 @@ function loadSaved() {
             status: s.status || 'Ikke startet',
             link: s.link || '', comment: s.comment || '',
             ansvar: s.ansvar || '', fredagstatus: s.fredagstatus || '',
-            eier: s.eier || ''
+            eier: s.eier || '',
+            _uAt: s._uAt || 0
           });
           if (s.id >= idCounter) idCounter = s.id + 1;
         });
@@ -241,7 +254,8 @@ function loadSaved() {
 }
 
 function saveData() {
-  try { localStorage.setItem('bestillingsliste_v4', JSON.stringify({tasks, sectionOpen, undersecOpen, undersecBudget, SECTIONS_DATA, vacations, vacIdCounter, projectLinks, linkIdCounter, modelLinks, modelIdCounter, risikoEntries, muligheterEntries, bhQuestions, bhIdCounter})); showToast('Lagret'); }
+  _pruneTombstones();
+  try { localStorage.setItem('bestillingsliste_v4', JSON.stringify({tasks, sectionOpen, undersecOpen, undersecBudget, SECTIONS_DATA, vacations, vacIdCounter, projectLinks, linkIdCounter, modelLinks, modelIdCounter, risikoEntries, muligheterEntries, bhQuestions, bhIdCounter, deletedTasks})); showToast('Lagret'); }
   catch(e) { showToast('Kunne ikke lagre'); }
 }
 
@@ -390,7 +404,7 @@ function toggleSection(s) { sectionOpen[s] = !sectionOpen[s]; render(); }
 
 function change(id, field, val) {
   const t = tasks.find(t=>t.id===id);
-  if (t) t[field] = val;
+  if (t) { t[field] = val; t._uAt = Date.now(); }
   scheduleAutoSave();
   updateStats();
   if (activeTab==='kanban') { if(kanbanView==='tidslinje') renderTimeline(); else renderKanban(); }
@@ -400,7 +414,7 @@ function change(id, field, val) {
 
 function toggleSelect(id) {
   const t = tasks.find(t=>t.id===id);
-  if (t) t.selected = !t.selected;
+  if (t) { t.selected = !t.selected; t._uAt = Date.now(); }
   scheduleAutoSave();
   render();
 }
@@ -1038,6 +1052,7 @@ function makeNote(t, c, forceOverdue, today) {
 
 
 function deleteTask(id) {
+  deletedTasks[id] = Date.now();
   tasks = tasks.filter(function(t){ return t.id !== id; });
   scheduleAutoSave();
   render();
@@ -1048,7 +1063,7 @@ function addTask(section, sub, undersec) {
   tasks.push({
     id: idCounter++, excelId: '',
     section: section, undersec: undersec||'', sub: sub, name: name,
-    selected: false, frist: '', timer: '', status: 'Ikke startet', link: '', comment: '', eier: '', ansvar: '', fredagstatus: ''
+    selected: false, frist: '', timer: '', status: 'Ikke startet', link: '', comment: '', eier: '', ansvar: '', fredagstatus: '', _uAt: Date.now()
   });
   scheduleAutoSave();
   render();
@@ -1160,7 +1175,7 @@ function ukModalConfirm() {
     tasks.push({
       id: idCounter++, excelId: '',
       section: sec, undersec: us, sub: name, name: 'Ny post',
-      selected: false, frist: '', timer: '', status: 'Ikke startet', link: '', comment: '', eier: '', ansvar: '', fredagstatus: ''
+      selected: false, frist: '', timer: '', status: 'Ikke startet', link: '', comment: '', eier: '', ansvar: '', fredagstatus: '', _uAt: Date.now()
     });
     var newSubId = tasks[tasks.length-1].id;
     ukModalCancel();
@@ -1175,7 +1190,7 @@ function ukModalConfirm() {
   tasks.push({
     id: idCounter++, excelId: '',
     section: sec, undersec: name, sub: '', name: 'Ny post',
-    selected: false, frist: '', timer: '', status: 'Ikke startet', link: '', comment: '', eier: '', ansvar: '', fredagstatus: ''
+    selected: false, frist: '', timer: '', status: 'Ikke startet', link: '', comment: '', eier: '', ansvar: '', fredagstatus: '', _uAt: Date.now()
   });
   var newTaskId = tasks[tasks.length-1].id;
   if(!undersecOpen[sec]) undersecOpen[sec] = {};
@@ -1201,7 +1216,9 @@ function deleteSection(sec) {
     : 'Slette det tomme kapittelet "' + sec + '"?';
   if (!confirm(msg)) return;
 
-  // Remove all tasks in the section
+  // Remove all tasks in the section (tombstone each so the deletion syncs)
+  var _delNow = Date.now();
+  tasks.forEach(function(t){ if (t.section === sec) deletedTasks[t.id] = _delNow; });
   tasks = tasks.filter(function(t){ return t.section !== sec; });
   // Remove structure + UI state
   delete SECTIONS_DATA[sec];
@@ -1228,6 +1245,8 @@ function deleteUndersec(sec, usec) {
     return;
   }
   if(!confirm('Slette "'+usec+'" og alle poster under?')) return;
+  var _delNow = Date.now();
+  tasks.forEach(function(t){ if (t.section===sec && t.undersec===usec) deletedTasks[t.id] = _delNow; });
   tasks = tasks.filter(function(t){ return !(t.section===sec && t.undersec===usec); });
   scheduleAutoSave(); render();
 }
@@ -1242,7 +1261,7 @@ function startEditUndersecName(spanEl, sec, oldName) {
     if(done) return; done=true;
     var n=inp.value.trim()||oldName; inp.remove(); spanEl.style.display='';
     if(n!==oldName){
-      tasks.forEach(function(t){if(t.section===sec&&t.undersec===oldName) t.undersec=n;});
+      tasks.forEach(function(t){if(t.section===sec&&t.undersec===oldName){ t.undersec=n; t._uAt=Date.now(); }});
       if(undersecOpen[sec]&&undersecOpen[sec][oldName]!==undefined){
         undersecOpen[sec][n]=undersecOpen[sec][oldName]; delete undersecOpen[sec][oldName];
       }
@@ -1281,7 +1300,7 @@ function renameSectionKey(o, n) {
   if(SECTIONS_DATA[o]){SECTIONS_DATA[n]=SECTIONS_DATA[o]; delete SECTIONS_DATA[o];}
   if(sectionOpen[o]!==undefined){sectionOpen[n]=sectionOpen[o]; delete sectionOpen[o];}
   if(undersecOpen[o]!==undefined){undersecOpen[n]=undersecOpen[o]; delete undersecOpen[o];}
-  tasks.forEach(function(t){if(t.section===o) t.section=n;});
+  tasks.forEach(function(t){if(t.section===o){ t.section=n; t._uAt=Date.now(); }});
   scheduleAutoSave(); render();
 }
 
@@ -1308,14 +1327,14 @@ function renameSubKey(sec, o, n) {
   if(SECTIONS_DATA[sec]&&SECTIONS_DATA[sec][o]){
     SECTIONS_DATA[sec][n]=SECTIONS_DATA[sec][o]; delete SECTIONS_DATA[sec][o];
   }
-  tasks.forEach(function(t){if(t.section===sec&&t.sub===o) t.sub=n;});
+  tasks.forEach(function(t){if(t.section===sec&&t.sub===o){ t.sub=n; t._uAt=Date.now(); }});
   scheduleAutoSave(); render();
 }
 
 function handleSecCb(cb) {
   var sec = cb.getAttribute('data-sec');
   tasks.forEach(function(t) {
-    if (t.section === sec) t.selected = cb.checked;
+    if (t.section === sec) { t.selected = cb.checked; t._uAt = Date.now(); }
   });
   scheduleAutoSave();
   render();
@@ -1325,7 +1344,7 @@ function handleSubCb(cb) {
   var sec = cb.getAttribute('data-sec');
   var sub = cb.getAttribute('data-sub');
   tasks.forEach(function(t) {
-    if (t.section === sec && t.sub === sub) t.selected = cb.checked;
+    if (t.section === sec && t.sub === sub) { t.selected = cb.checked; t._uAt = Date.now(); }
   });
   scheduleAutoSave();
   render();
@@ -1340,7 +1359,7 @@ function handleSubAdd(btn) {
 
 function toggleSubSelect(section, sub, checked) {
   tasks.forEach(function(t) {
-    if (t.section === section && t.sub === sub) t.selected = checked;
+    if (t.section === section && t.sub === sub) { t.selected = checked; t._uAt = Date.now(); }
   });
   scheduleAutoSave();
   render();
@@ -1737,7 +1756,7 @@ function vacStartResize(e) {
 }
 
 var autoSaveTimer;
-function scheduleAutoSave(){ clearTimeout(autoSaveTimer); autoSaveTimer=setTimeout(function(){ try{ localStorage.setItem('bestillingsliste_v4',JSON.stringify({tasks:tasks,sectionOpen:sectionOpen,undersecOpen:undersecOpen,undersecBudget:undersecBudget,SECTIONS_DATA:SECTIONS_DATA,vacations:vacations,vacIdCounter:vacIdCounter,projectLinks:projectLinks,linkIdCounter:linkIdCounter,modelLinks:modelLinks,modelIdCounter:modelIdCounter,risikoEntries:risikoEntries,muligheterEntries:muligheterEntries,bhQuestions:bhQuestions,bhIdCounter:bhIdCounter})); }catch(e){} },1200); }
+function scheduleAutoSave(){ clearTimeout(autoSaveTimer); autoSaveTimer=setTimeout(function(){ try{ localStorage.setItem('bestillingsliste_v4',JSON.stringify({tasks:tasks,sectionOpen:sectionOpen,undersecOpen:undersecOpen,undersecBudget:undersecBudget,SECTIONS_DATA:SECTIONS_DATA,vacations:vacations,vacIdCounter:vacIdCounter,projectLinks:projectLinks,linkIdCounter:linkIdCounter,modelLinks:modelLinks,modelIdCounter:modelIdCounter,risikoEntries:risikoEntries,muligheterEntries:muligheterEntries,bhQuestions:bhQuestions,bhIdCounter:bhIdCounter,deletedTasks:deletedTasks})); }catch(e){} },1200); }
 var _change=change;
 window.change=function(id,field,val){ _change(id,field,val); scheduleAutoSave(); };
 var _toggleSelect=toggleSelect;
@@ -1913,6 +1932,7 @@ function spConnect() {
   if (!apiKey) { spSetStatus('Fyll inn API Key.', 'err'); return; }
   spCfg = { binId: binId, apiKey: apiKey, interval: interval };
   _spSetDirty(false); // explicit connect: use server as baseline
+  spBaselineAdopted = false; // next pull adopts the server copy wholesale
   try { localStorage.setItem(SP_CFG_KEY, JSON.stringify({interval: interval})); } catch(e) {}
   try { localStorage.setItem(SP_API_KEY_KEY, apiKey); localStorage.setItem(SP_API_KEY_TS_KEY, Date.now().toString()); } catch(e) {}
   spSetConnected(true);
@@ -1968,10 +1988,120 @@ function spHeaders() {
   };
 }
 
+// Has the first pull of this session established the server baseline yet?
+// Before this is true, a clean (non-dirty) client adopts the server copy
+// wholesale. After it, ongoing polls do a per-item merge so concurrent edits
+// from different browsers/windows are combined instead of overwriting one
+// another.
+var spBaselineAdopted = false;
+
+// Throttled error toast so a temporary network/quota hiccup during polling
+// doesn't spam the screen, but the user still finds out sync is failing.
+var _spLastErrToast = 0;
+function _spErrToast(msg) {
+  var now = Date.now();
+  if (now - _spLastErrToast > 15000) { _spLastErrToast = now; try { showToast(msg); } catch(e) {} }
+}
+
+function _pruneTombstones() {
+  try {
+    var cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    Object.keys(deletedTasks).forEach(function(id){ if ((+deletedTasks[id] || 0) < cutoff) delete deletedTasks[id]; });
+  } catch(e) {}
+}
+
+// Per-task last-write-wins union. Posts added in either place survive; for a
+// task present on both sides the newest _uAt wins; tombstones drop deleted
+// tasks unless the task was edited after being deleted.
+function _mergeTasks(localArr, remoteArr, localTomb, remoteTomb) {
+  localArr  = localArr  || [];
+  remoteArr = remoteArr || [];
+  localTomb  = localTomb  || {};
+  remoteTomb = remoteTomb || {};
+
+  var tomb = {};
+  [localTomb, remoteTomb].forEach(function(src){
+    Object.keys(src).forEach(function(id){
+      var ts = +src[id] || 0;
+      if (ts > (tomb[id] || 0)) tomb[id] = ts;
+    });
+  });
+
+  var byId = {};
+  function consider(t){
+    if (t == null || t.id == null) return;
+    var id = String(t.id);
+    var ex = byId[id];
+    if (!ex) { byId[id] = t; return; }
+    if ((+t._uAt || 0) >= (+ex._uAt || 0)) byId[id] = t;
+  }
+  remoteArr.forEach(consider);
+  localArr.forEach(consider);
+
+  var out = [];
+  Object.keys(byId).forEach(function(id){
+    var t = byId[id];
+    var delTs = tomb[id] || 0;
+    if (delTs && delTs >= (+t._uAt || 0)) return;
+    out.push(t);
+  });
+  return { tasks: out, tomb: tomb };
+}
+
+// Union two id-keyed collections (vacations, links, questions). No timestamps,
+// so on an id conflict the preferred side wins; both sides' additions survive.
+function _unionById(localArr, remoteArr, preferLocal) {
+  localArr  = localArr  || [];
+  remoteArr = remoteArr || [];
+  var map = {};
+  var first  = preferLocal ? remoteArr : localArr;
+  var second = preferLocal ? localArr  : remoteArr;
+  first.forEach(function(x){ if (x && x.id != null) map[String(x.id)] = x; });
+  second.forEach(function(x){ if (x && x.id != null) map[String(x.id)] = x; });
+  return Object.keys(map).map(function(k){ return map[k]; });
+}
+
+function _normalizeRemoteTask(s) {
+  return {
+    id: s.id, excelId: s.excelId || '',
+    section: migrateSectionName(s.section), undersec: s.undersec || '', sub: s.sub || '',
+    name: s.name || '', selected: !!s.selected,
+    frist: s.frist || '', timer: s.timer || '', status: s.status || 'Ikke startet',
+    link: s.link || '', comment: s.comment || '', ansvar: s.ansvar || '',
+    eier: s.eier || '', fredagstatus: s.fredagstatus || '',
+    _uAt: +s._uAt || 0
+  };
+}
+
+function _spPersistLocal() {
+  try {
+    localStorage.setItem('bestillingsliste_v4', JSON.stringify({
+      tasks: tasks, sectionOpen: sectionOpen, undersecOpen: undersecOpen,
+      undersecBudget: undersecBudget,
+      SECTIONS_DATA: SECTIONS_DATA, vacations: vacations, vacIdCounter: vacIdCounter,
+      projectLinks: projectLinks, linkIdCounter: linkIdCounter,
+      modelLinks: modelLinks, modelIdCounter: modelIdCounter,
+      bhQuestions: bhQuestions, bhIdCounter: bhIdCounter,
+      deletedTasks: deletedTasks
+    }));
+  } catch(e) {}
+}
+
+function _spRerender() {
+  render();
+  renderLinks();
+  renderModelLinks();
+  if (activeTab === 'ferie') vacRender();
+  if (activeTab === 'dashboard') renderDashboard();
+  if (activeTab === 'ukeplan') renderUkeplan();
+  if (activeTab === 'sporsmal') renderBhq();
+}
+
 async function spPush() {
   if (!spCfg) return;
   spSetDot('busy');
   try {
+    _pruneTombstones();
     var ts = Date.now();
     var payload = {
       tasks: tasks, sectionOpen: sectionOpen, undersecOpen: undersecOpen,
@@ -1980,6 +2110,7 @@ async function spPush() {
       projectLinks: projectLinks, linkIdCounter: linkIdCounter,
       modelLinks: modelLinks, modelIdCounter: modelIdCounter,
       bhQuestions: bhQuestions, bhIdCounter: bhIdCounter,
+      deletedTasks: deletedTasks,
       ts: ts
     };
     var r = await fetch(spUrl(), {
@@ -1993,7 +2124,6 @@ async function spPush() {
     }
     var data = await r.json();
     spLastVer = (data.metadata || {}).version || spLastVer + 1;
-    // Update hash so next pull doesn't re-merge our own data
     spLastHash = ts + '_' + tasks.length + '_' + vacations.length;
     _spSetDirty(false);
     spSetDot('ok');
@@ -2001,6 +2131,8 @@ async function spPush() {
   } catch(e) {
     spSetDot('err');
     spSetStatus('Feil ved opplasting: ' + e.message, 'err');
+    // A failed push means the user's edits did NOT reach shared storage — make it visible.
+    _spErrToast('⚠ Endringene ble ikke lagret til delt lagring: ' + e.message);
   }
 }
 
@@ -2008,7 +2140,6 @@ async function spPull() {
   if (!spCfg) return;
   spSetDot('busy');
   try {
-    // Add cache-buster to prevent stale responses
     var r = await fetch(spUrl() + '/latest?_=' + Date.now(), {
       headers: spHeaders(),
       cache: 'no-store'
@@ -2020,73 +2151,70 @@ async function spPull() {
       spSetStatus('Tom respons fra server', 'err');
       return;
     }
-    // If we have local changes that haven't been confirmed uploaded, push them up
-    // now instead of letting the server overwrite them. This protects deletions,
-    // edits and column data (e.g. Ansvar) from being reverted on refresh/poll.
-    if (_spDirty) {
-      await spPush();
+    var remote = data.record;
+    var remoteSig = (remote.ts || 0) + '_' + (remote.tasks || []).length + '_' + (remote.vacations || []).length;
+
+    // First contact this session, and no unsynced local edits: adopt the server
+    // copy as the baseline (matches the app's original page-load behaviour and
+    // avoids resurrecting local seed rows).
+    if (!spBaselineAdopted && !_spDirty) {
+      spAdopt(remote);
+      spBaselineAdopted = true;
+      spLastHash = remoteSig;
+      spSetDot('ok');
+      spSetStatus('✓ Synkronisert ' + spTime(), 'ok');
       return;
     }
-    // Compare by timestamp + content size (more reliable than version)
-    var remoteTs = data.record.ts || 0;
-    var remoteTaskCount = (data.record.tasks || []).length;
-    var remoteVacCount  = (data.record.vacations || []).length;
-    var remoteSig = remoteTs + '_' + remoteTaskCount + '_' + remoteVacCount;
-    if (remoteSig !== spLastHash) {
-      spLastHash = remoteSig;
-      spMerge(data.record);
+
+    // Nothing changed remotely and nothing pending locally -> no work.
+    if (!_spDirty && remoteSig === spLastHash) {
+      spSetDot('ok');
+      spSetStatus('✓ Synkronisert ' + spTime(), 'ok');
+      return;
     }
-    spSetDot('ok');
-    spSetStatus('✓ Synkronisert ' + spTime(), 'ok');
+
+    var changed = spMerge(remote);
+    spBaselineAdopted = true;
+    spLastHash = remoteSig;
+
+    // If our merged state holds anything the server doesn't (local-only posts,
+    // newer edits, pending deletes) or we had unsynced changes, push the merged
+    // truth up so every client converges.
+    if (_spDirty || changed) {
+      await spPush();
+    } else {
+      spSetDot('ok');
+      spSetStatus('✓ Synkronisert ' + spTime(), 'ok');
+    }
   } catch(e) {
     spSetDot('err');
     spSetStatus('Feil: ' + e.message + '. Sjekk Bin ID og API-nøkkel.', 'err');
+    _spErrToast('⚠ Kunne ikke hente fra delt lagring: ' + e.message);
   }
 }
 
-function spMerge(remote) {
+// Wholesale adopt of the server record as the local baseline (first load).
+function spAdopt(remote) {
   if (!remote || !remote.tasks) return;
-
-  // Restore section structure first
   if (remote.SECTIONS_DATA) {
     Object.keys(SECTIONS_DATA).forEach(function(k){ delete SECTIONS_DATA[k]; });
     Object.assign(SECTIONS_DATA, migrateSectionsData(remote.SECTIONS_DATA));
   }
-
-  // Replace tasks entirely with remote version (preserves underkapitler exactly as sender has them)
-  tasks = remote.tasks.map(function(s) {
-    return {
-      id: s.id,
-      excelId: s.excelId || '',
-      section: migrateSectionName(s.section),
-      undersec: s.undersec || '',
-      sub: s.sub || '',
-      name: s.name || '',
-      selected: !!s.selected,
-      frist: s.frist || '',
-      timer: s.timer || '',
-      status: s.status || 'Ikke startet',
-      link: s.link || '',
-      comment: s.comment || '',
-      ansvar: s.ansvar || '',
-      eier: s.eier || '',
-      fredagstatus: s.fredagstatus || ''
-    };
-  });
-
-  // Update idCounter so new tasks don't collide
+  tasks = remote.tasks.map(_normalizeRemoteTask);
   tasks.forEach(function(t){ if (t.id >= idCounter) idCounter = t.id + 1; });
-
-  // Restore other state
-  if (remote.sectionOpen) {
-    Object.keys(remote.sectionOpen).forEach(function(k){
-      sectionOpen[migrateSectionName(k)] = remote.sectionOpen[k];
+  if (remote.deletedTasks && typeof remote.deletedTasks === 'object') {
+    Object.keys(remote.deletedTasks).forEach(function(id){
+      var ts = +remote.deletedTasks[id] || 0;
+      if (ts > (deletedTasks[id] || 0)) deletedTasks[id] = ts;
     });
+  }
+  if (remote.sectionOpen) {
+    Object.keys(remote.sectionOpen).forEach(function(k){ sectionOpen[migrateSectionName(k)] = remote.sectionOpen[k]; });
   }
   if (remote.undersecOpen) {
     Object.keys(remote.undersecOpen).forEach(function(k){
-      var newKey = migrateSectionName(k);
-      undersecOpen[newKey] = Object.assign({}, undersecOpen[newKey] || {}, remote.undersecOpen[k]);
+      var nk = migrateSectionName(k);
+      undersecOpen[nk] = Object.assign({}, undersecOpen[nk] || {}, remote.undersecOpen[k]);
     });
   }
   if (remote.undersecBudget) {
@@ -2094,47 +2222,84 @@ function spMerge(remote) {
     Object.assign(undersecBudget, migrateUndersecBudgetKeys(remote.undersecBudget));
     try { localStorage.setItem('bl_budget', JSON.stringify(undersecBudget)); } catch(e) {}
   }
+  if (remote.vacations)   { vacations = remote.vacations;   vacIdCounter  = remote.vacIdCounter  || (Math.max.apply(null,[0].concat(vacations.map(function(v){return v.id||0;})))+1); }
+  if (remote.projectLinks){ projectLinks = remote.projectLinks; linkIdCounter = remote.linkIdCounter || (Math.max.apply(null,[0].concat(projectLinks.map(function(l){return l.id||0;})))+1); }
+  if (remote.modelLinks)  { modelLinks = remote.modelLinks; modelIdCounter = remote.modelIdCounter || (Math.max.apply(null,[0].concat(modelLinks.map(function(l){return l.id||0;})))+1); }
+  if (remote.bhQuestions) { bhQuestions = remote.bhQuestions; bhIdCounter = remote.bhIdCounter || (bhQuestions.reduce(function(m,q){return Math.max(m,q.id||0);},0)+1); }
+  _spPersistLocal();
+  _spRerender();
+}
+
+// Ongoing merge of the server record into local state. Returns true if the
+// resulting local state differs from what the server currently holds (so the
+// caller knows it should push the merged result back up).
+function spMerge(remote) {
+  if (!remote || !remote.tasks) return false;
+
+  // Section structure: keep local while we have unsynced edits, else adopt remote.
+  if (remote.SECTIONS_DATA && !_spDirty) {
+    Object.keys(SECTIONS_DATA).forEach(function(k){ delete SECTIONS_DATA[k]; });
+    Object.assign(SECTIONS_DATA, migrateSectionsData(remote.SECTIONS_DATA));
+  }
+
+  var remoteTasks = remote.tasks.map(_normalizeRemoteTask);
+  var merged = _mergeTasks(tasks, remoteTasks, deletedTasks, remote.deletedTasks || {});
+  tasks = merged.tasks;
+  deletedTasks = merged.tomb;
+  tasks.forEach(function(t){ if (t.id >= idCounter) idCounter = t.id + 1; });
+
+  // Did the merge keep anything the server doesn't already have?
+  var changed = false;
+  var remoteMap = {};
+  remoteTasks.forEach(function(t){ remoteMap[String(t.id)] = (+t._uAt || 0); });
+  var mergedIds = {};
+  tasks.forEach(function(t){
+    var id = String(t.id); mergedIds[id] = true;
+    if (!(id in remoteMap)) changed = true;                 // task remote lacks
+    else if ((+t._uAt || 0) > remoteMap[id]) changed = true; // our version newer
+  });
+  remoteTasks.forEach(function(t){ if (!mergedIds[String(t.id)]) changed = true; }); // remote had a task we dropped (deleted)
+
+  // Open/closed UI state: union in remote's info.
+  if (remote.sectionOpen) {
+    Object.keys(remote.sectionOpen).forEach(function(k){
+      var nk = migrateSectionName(k);
+      if (!_spDirty || sectionOpen[nk] === undefined) sectionOpen[nk] = remote.sectionOpen[k];
+    });
+  }
+  if (remote.undersecOpen) {
+    Object.keys(remote.undersecOpen).forEach(function(k){
+      var nk = migrateSectionName(k);
+      undersecOpen[nk] = Object.assign({}, remote.undersecOpen[k], undersecOpen[nk] || {});
+    });
+  }
+  if (remote.undersecBudget && !_spDirty) {
+    Object.keys(undersecBudget).forEach(function(k){ delete undersecBudget[k]; });
+    Object.assign(undersecBudget, migrateUndersecBudgetKeys(remote.undersecBudget));
+    try { localStorage.setItem('bl_budget', JSON.stringify(undersecBudget)); } catch(e) {}
+  }
+
+  // Collections keyed by id: union so additions on both sides survive.
   if (remote.vacations) {
-    vacations = remote.vacations;
-    vacIdCounter = remote.vacIdCounter || (Math.max.apply(null, [0].concat(vacations.map(function(v){return v.id||0;}))) + 1);
+    vacations = _unionById(vacations, remote.vacations, _spDirty);
+    vacIdCounter = Math.max(vacIdCounter || 1, remote.vacIdCounter || 1, Math.max.apply(null,[0].concat(vacations.map(function(v){return v.id||0;})))+1);
   }
-
-  // Restore document links
   if (remote.projectLinks) {
-    projectLinks = remote.projectLinks;
-    linkIdCounter = remote.linkIdCounter || (Math.max.apply(null, [0].concat(projectLinks.map(function(l){return l.id||0;}))) + 1);
+    projectLinks = _unionById(projectLinks, remote.projectLinks, _spDirty);
+    linkIdCounter = Math.max(linkIdCounter || 1, remote.linkIdCounter || 1, Math.max.apply(null,[0].concat(projectLinks.map(function(l){return l.id||0;})))+1);
   }
-
-  // Restore model links
   if (remote.modelLinks) {
-    modelLinks = remote.modelLinks;
-    modelIdCounter = remote.modelIdCounter || (Math.max.apply(null, [0].concat(modelLinks.map(function(l){return l.id||0;}))) + 1);
+    modelLinks = _unionById(modelLinks, remote.modelLinks, _spDirty);
+    modelIdCounter = Math.max(modelIdCounter || 1, remote.modelIdCounter || 1, Math.max.apply(null,[0].concat(modelLinks.map(function(l){return l.id||0;})))+1);
   }
-
-  // Restore questions to byggherre
   if (remote.bhQuestions) {
-    bhQuestions = remote.bhQuestions;
-    bhIdCounter = remote.bhIdCounter || (bhQuestions.reduce(function(m,q){ return Math.max(m, q.id||0); }, 0) + 1);
+    bhQuestions = _unionById(bhQuestions, remote.bhQuestions, _spDirty);
+    bhIdCounter = Math.max(bhIdCounter || 1, remote.bhIdCounter || 1, bhQuestions.reduce(function(m,q){return Math.max(m,q.id||0);},0)+1);
   }
 
-  // Persist locally and re-render
-  try {
-    localStorage.setItem('bestillingsliste_v4', JSON.stringify({
-      tasks: tasks, sectionOpen: sectionOpen, undersecOpen: undersecOpen,
-      undersecBudget: undersecBudget,
-      SECTIONS_DATA: SECTIONS_DATA, vacations: vacations, vacIdCounter: vacIdCounter,
-      projectLinks: projectLinks, linkIdCounter: linkIdCounter,
-      modelLinks: modelLinks, modelIdCounter: modelIdCounter,
-      bhQuestions: bhQuestions, bhIdCounter: bhIdCounter
-    }));
-  } catch(e) {}
-  render();
-  renderLinks();
-  renderModelLinks();
-  if (activeTab === 'ferie') vacRender();
-  if (activeTab === 'dashboard') renderDashboard();
-  if (activeTab === 'ukeplan') renderUkeplan();
-  if (activeTab === 'sporsmal') renderBhq();
+  _spPersistLocal();
+  _spRerender();
+  return changed;
 }
 
 
@@ -2720,6 +2885,7 @@ function initDragAndDrop() {
 
     // Remove src from array
     var srcTask = tasks.splice(srcIdx, 1)[0];
+    if (srcTask) srcTask._uAt = Date.now();
     // Recalculate tgt index after removal
     tgtIdx = tasks.findIndex(function(t) { return t.id === targetId; });
     var insertIdx = insertBefore ? tgtIdx : tgtIdx + 1;
